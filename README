@@ -1,0 +1,3 @@
+gitfs
+-----
+A Git-like filesystem implemented in userspace.
