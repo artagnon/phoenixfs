@@ -29,6 +29,9 @@ ifndef V
 endif
 endif
 
+XDIFF_OBJS = xdiff/xdiffi.o xdiff/xprepare.o xdiff/xutils.o xdiff/xemit.o \
+	xdiff/xmerge.o xdiff/xpatience.o
+
 gitfs$X: main.o fuse.o
 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) -o $@ main.o fuse.o \
 		$(ALL_LDFLAGS) $(LIBS)
@@ -39,7 +42,14 @@ main.o: main.c gitfs.h
 fuse.o: fuse.c gitfs.h
 	$(QUIET_CC)$(CC) -o $*.o -c $(ALL_CFLAGS) $<
 
+xdiff-interface.o $(XDIFF_OBJS): \
+	xdiff/xinclude.h xdiff/xmacros.h xdiff/xdiff.h xdiff/xtypes.h \
+	xdiff/xutils.h xdiff/xprepare.h xdiff/xdiffi.h xdiff/xemit.h
+
+xdiff/lib.a: $(XDIFF_OBJS)
+	$(QUIET_AR)$(RM) $@ && $(AR) rcs $@ $(XDIFF_OBJS)
+
 clean:
-	$(RM) gitfs$X gitfs.o fuse.o *~ $<
+	$(RM) gitfs$X *~ *.o xdiff/*.o xdiff/lib.a $<
 
 .PHONY: all clean FORCE
