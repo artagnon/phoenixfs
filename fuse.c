@@ -428,25 +428,30 @@ static struct fuse_operations gitfs_oper = {
 	.utime = gitfs_utime,
 };
 
-void gitfs_subcmd_init(const char *mountpoint, const char *datapath)
+void gitfs_subcmd_init(const char *datapath, const char *mountpoint)
 {
 	struct stat st;
 
 	/* Set up the rootenv */
 	rootenv.datapath = malloc(PATH_MAX * sizeof(char));
 	rootenv.mountpoint = malloc(PATH_MAX * sizeof(char));
+	if (!realpath(datapath, NULL))
+		die("Invalid datapath: %s", datapath);
+	else if (!realpath(mountpoint, NULL))
+		die("Invalid mountpoint: %s", mountpoint);
 	strcpy(rootenv.datapath, realpath(datapath, NULL));
 	strcpy(rootenv.mountpoint, realpath(mountpoint, NULL));
+
+	/* Check that the datapath refers to a regular file */
+	if (stat(rootenv.datapath, &st) != 0 || !S_ISREG(st.st_mode))
+		die("%s is not a regular file", datapath);
+
 	rootenv.uid = getuid();
 	rootenv.gid = getgid();
 	rootenv.now = time(NULL);
 
 	GITFS_DBG("datapath: %s, mountpoint: %s, uid %d, gid %d",
 		rootenv.datapath, rootenv.mountpoint, rootenv.uid, rootenv.gid);
-	if (!rootenv.mountpoint)
-		die("Invalid mountpoint");
-	else if (stat(rootenv.mountpoint, &st) != 0 || !S_ISDIR(st.st_mode))
-		die("error: %s is not a directory", rootenv.mountpoint);
 }
 
 void gitfs_subcmd_log()

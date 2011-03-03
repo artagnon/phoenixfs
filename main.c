@@ -27,7 +27,7 @@ static void usage(const char *progname, enum subcmd cmd)
 	case SUBCMD_NONE:
 		die("Usage: %s <subcommand> [arguments ...]", progname);
 	case SUBCMD_INIT:
-		die("Usage: %s init <mountpoint> [packfile]", progname);
+		die("Usage: %s mount <mountpoint> [packfile]", progname);
 	case SUBCMD_LOG:
 		die("Usage: %s log (unimplemented)", progname);
 	case SUBCMD_DIFF:
@@ -52,11 +52,11 @@ int main(int argc, char *argv[])
 		usage(argv[0], SUBCMD_NONE);
 
 	/* Subcommand dispatch routine */
-	if (!strncmp(argv[1], "init", 4)) {
+	if (!strncmp(argv[1], "mount", 5)) {
 		if (argc < 3)
 			usage(argv[0], SUBCMD_INIT);
-		gitfs_subcmd_init(argv[2], (argc == 4 ? argv[3] : NULL));
-		nargv[3] = argv[2];
+		gitfs_subcmd_init(argv[2], argv[3]);
+		nargv[3] = argv[3];
 	} else if (!strncmp(argv[1], "log", 3))
 		usage(argv[0], SUBCMD_LOG);
 	else if (!strncmp(argv[1], "diff", 4))
