@@ -4,8 +4,8 @@ CC = gcc
 RM = rm -f
 MV = mv
 
-CFLAGS = -g -O2 -Wall $(shell pkg-config fuse --cflags)
-LDFLAGS = $(shell pkg-config fuse --libs)
+CFLAGS = -g -O2 -Wall $(shell pkg-config fuse --cflags) $(shell pkg-config zlib --cflags)
+LDFLAGS = $(shell pkg-config fuse --libs) $(shell pkg-config zlib --libs)
 ALL_CFLAGS = $(CFLAGS)
 ALL_LDFLAGS = $(LDFLAGS)
 LIBS =
@@ -32,7 +32,7 @@ endif
 XDIFF_OBJS = xdiff/xdiffi.o xdiff/xprepare.o xdiff/xutils.o xdiff/xemit.o \
 	xdiff/xmerge.o xdiff/xpatience.o
 
-gitfs$X: main.o fuse.o
+gitfs$X: main.o fuse.o compress.o
 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) -o $@ main.o fuse.o \
 		$(ALL_LDFLAGS) $(LIBS)
 
@@ -40,6 +40,9 @@ main.o: main.c gitfs.h
 	$(QUIET_CC)$(CC) -o $*.o -c $(ALL_CFLAGS) $<
 
 fuse.o: fuse.c gitfs.h
+	$(QUIET_CC)$(CC) -o $*.o -c $(ALL_CFLAGS) $<
+
+compress.o: compress.c compress.h
 	$(QUIET_CC)$(CC) -o $*.o -c $(ALL_CFLAGS) $<
 
 xdiff-interface.o $(XDIFF_OBJS): \
