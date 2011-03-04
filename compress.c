@@ -1,6 +1,8 @@
+#include "buffer.h"
+#include "compress.h"
+
 #include <zlib.h>
 #include <stdio.h>
-#include "compress.h"
 
 int zdeflate(FILE *source, FILE *dest, int level)
 {
