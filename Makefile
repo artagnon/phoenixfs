@@ -7,6 +7,7 @@ MV = mv
 XDIFF_LIB=xdiff/lib.a
 
 BUILTIN_OBJS =
+BUILTIN_OBJS += common.o
 BUILTIN_OBJS += main.o
 BUILTIN_OBJS += fuse.o
 BUILTIN_OBJS += buffer.o
@@ -43,6 +44,9 @@ XDIFF_OBJS = xdiff/xdiffi.o xdiff/xprepare.o xdiff/xutils.o xdiff/xemit.o \
 gitfs$X: $(BUILTIN_OBJS)
 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) -o $@ $(BUILTIN_OBJS) \
 		$(ALL_LDFLAGS) $(LIBS)
+
+common.o: common.c gitfs.h
+	$(QUIET_CC)$(CC) -o $*.o -c $(ALL_CFLAGS) $<
 
 main.o: main.c gitfs.h
 	$(QUIET_CC)$(CC) -o $*.o -c $(ALL_CFLAGS) $<
