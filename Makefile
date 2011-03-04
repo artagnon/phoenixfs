@@ -12,6 +12,7 @@ BUILTIN_OBJS += main.o
 BUILTIN_OBJS += fuse.o
 BUILTIN_OBJS += buffer.o
 BUILTIN_OBJS += compress.o
+BUILTIN_OBJS += pack.o
 
 CFLAGS = -g -O2 -Wall $(shell pkg-config fuse --cflags) $(shell pkg-config zlib --cflags)
 LDFLAGS = $(shell pkg-config fuse --libs) $(shell pkg-config zlib --libs)
@@ -58,6 +59,9 @@ buffer.o: buffer.c buffer.h
 	$(QUIET_CC)$(CC) -o $*.o -c $(ALL_CFLAGS) $<
 
 compress.o: compress.c compress.h buffer.h
+	$(QUIET_CC)$(CC) -o $*.o -c $(ALL_CFLAGS) $<
+
+pack.o: pack.c pack.h
 	$(QUIET_CC)$(CC) -o $*.o -c $(ALL_CFLAGS) $<
 
 xdiff-interface.o $(XDIFF_OBJS): \

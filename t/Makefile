@@ -13,7 +13,7 @@ CFLAGS = -g -O2 -Wall $(shell pkg-config fuse --cflags) $(shell pkg-config zlib 
 LDFLAGS = $(shell pkg-config fuse --libs) $(shell pkg-config zlib --libs)
 ALL_CFLAGS = $(CFLAGS)
 ALL_LDFLAGS = $(LDFLAGS)
-LIBS = $(XDIFF_LIB)
+LIBS =
 
 QUIET_SUBDIR0 = +$(MAKE) -C # space to separate -C and subdir
 QUIET_SUBDIR1 =
@@ -34,9 +34,18 @@ ifndef V
 endif
 endif
 
-test-diff$X: test-diff.o ../diff.o ../common.o
-	$(QUIET_LINK)$(CC) -I../ $(ALL_CFLAGS) -o $@ test-diff.o ../diff.o ../common.o \
+test-pack$X: test-pack.o ../pack.o ../common.o
+	$(QUIET_LINK)$(CC) -I../ $(ALL_CFLAGS) -o $@ test-pack.o \
+		../pack.o ../common.o \
 		$(ALL_LDFLAGS) $(LIBS)
+
+test-pack.o: test-pack.c ../pack.c
+	$(QUIET_CC)$(CC) -I../ -o $*.o -c $(ALL_CFLAGS) $<
+
+test-diff$X: test-diff.o ../diff.o ../common.o
+	$(QUIET_LINK)$(CC) -I../ $(ALL_CFLAGS) -o $@ test-diff.o \
+		../diff.o ../common.o \
+		$(ALL_LDFLAGS) $(XDIFF_LIB)
 
 test-diff.o: test-diff.c ../diff.c
 	$(QUIET_CC)$(CC) -I../ -o $*.o -c $(ALL_CFLAGS) $<
