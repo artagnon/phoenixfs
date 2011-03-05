@@ -5,6 +5,7 @@ RM = rm -f
 MV = mv
 
 XDIFF_LIB=xdiff/lib.a
+SHA1_LIB=block-sha1/lib.a
 
 BUILTIN_OBJS =
 BUILTIN_OBJS += common.o
@@ -42,6 +43,8 @@ endif
 XDIFF_OBJS = xdiff/xdiffi.o xdiff/xprepare.o xdiff/xutils.o xdiff/xemit.o \
 	xdiff/xmerge.o xdiff/xpatience.o
 
+SHA1_OBJS = block-sha1/sha1.o
+
 gitfs$X: $(BUILTIN_OBJS)
 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) -o $@ $(BUILTIN_OBJS) \
 		$(ALL_LDFLAGS) $(LIBS)
@@ -71,7 +74,10 @@ xdiff-interface.o $(XDIFF_OBJS): \
 $(XDIFF_LIB): $(XDIFF_OBJS)
 	$(QUIET_AR)$(RM) $@ && $(AR) rcs $@ $(XDIFF_OBJS)
 
+$(SHA1_LIB): $(SHA1_OBJS)
+	$(QUIET_AR)$(RM) $@ && $(AR) rcs $@ $(SHA1_OBJS)
+
 clean:
-	$(RM) gitfs$X *~ *.o xdiff/*.o $(LIBS) $<
+	$(RM) gitfs$X *~ *.o xdiff/*.o block-sha1/*.o $(LIBS) $<
 
 .PHONY: all clean FORCE
