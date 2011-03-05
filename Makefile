@@ -1,5 +1,3 @@
-all:: gitfs$X
-
 CC = gcc
 RM = rm -f
 MV = mv
@@ -14,12 +12,16 @@ BUILTIN_OBJS += fuse.o
 BUILTIN_OBJS += buffer.o
 BUILTIN_OBJS += compress.o
 BUILTIN_OBJS += pack.o
+BUILTIN_OBJS += sha1.o
+
+ALL_TARGETS =
+ALL_TARGETS += gitfs
 
 CFLAGS = -g -O2 -Wall $(shell pkg-config fuse --cflags) $(shell pkg-config zlib --cflags)
 LDFLAGS = $(shell pkg-config fuse --libs) $(shell pkg-config zlib --libs)
 ALL_CFLAGS = $(CFLAGS)
 ALL_LDFLAGS = $(LDFLAGS)
-LIBS =
+ALL_LIBS = $(XDIFF_LIB) $(SHA1_LIB)
 
 QUIET_SUBDIR0 = +$(MAKE) -C # space to separate -C and subdir
 QUIET_SUBDIR1 =
@@ -45,9 +47,11 @@ XDIFF_OBJS = xdiff/xdiffi.o xdiff/xprepare.o xdiff/xutils.o xdiff/xemit.o \
 
 SHA1_OBJS = block-sha1/sha1.o
 
-gitfs$X: $(BUILTIN_OBJS)
+all:: $(ALL_TARGETS)
+
+gitfs$X: $(BUILTIN_OBJS) $(ALL_LIBS)
 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) -o $@ $(BUILTIN_OBJS) \
-		$(ALL_LDFLAGS) $(LIBS)
+		$(ALL_LDFLAGS) $(ALL_LIBS)
 
 common.o: common.c gitfs.h
 	$(QUIET_CC)$(CC) -o $*.o -c $(ALL_CFLAGS) $<
@@ -55,21 +59,8 @@ common.o: common.c gitfs.h
 main.o: main.c gitfs.h
 	$(QUIET_CC)$(CC) -o $*.o -c $(ALL_CFLAGS) $<
 
-fuse.o: fuse.c gitfs.h
+%.o: %.c %.h
 	$(QUIET_CC)$(CC) -o $*.o -c $(ALL_CFLAGS) $<
-
-buffer.o: buffer.c buffer.h
-	$(QUIET_CC)$(CC) -o $*.o -c $(ALL_CFLAGS) $<
-
-compress.o: compress.c compress.h buffer.h
-	$(QUIET_CC)$(CC) -o $*.o -c $(ALL_CFLAGS) $<
-
-pack.o: pack.c pack.h
-	$(QUIET_CC)$(CC) -o $*.o -c $(ALL_CFLAGS) $<
-
-xdiff-interface.o $(XDIFF_OBJS): \
-	xdiff/xinclude.h xdiff/xmacros.h xdiff/xdiff.h xdiff/xtypes.h \
-	xdiff/xutils.h xdiff/xprepare.h xdiff/xdiffi.h xdiff/xemit.h
 
 $(XDIFF_LIB): $(XDIFF_OBJS)
 	$(QUIET_AR)$(RM) $@ && $(AR) rcs $@ $(XDIFF_OBJS)
@@ -78,6 +69,7 @@ $(SHA1_LIB): $(SHA1_OBJS)
 	$(QUIET_AR)$(RM) $@ && $(AR) rcs $@ $(SHA1_OBJS)
 
 clean:
-	$(RM) gitfs$X *~ *.o xdiff/*.o block-sha1/*.o $(LIBS) $<
+	$(RM) $(ALL_TARGETS) $(BUILTIN_OBJS) $(XDIFF_OBJS) \
+	$(SHA1_OBJS) $(ALL_LIBS) $<
 
 .PHONY: all clean FORCE

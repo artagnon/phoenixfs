@@ -1,4 +1,5 @@
-#include "gitfs.h"
+#include "fuse.h"
+
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>

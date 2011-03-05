@@ -1,5 +1,5 @@
-#ifndef COMPRESS_H_
-#define COMPRESS_H_
+#ifndef BUFFER_H_
+#define BUFFER_H_
 
 #include <stdio.h>
 #include <unistd.h>

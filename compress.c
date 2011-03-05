@@ -1,4 +1,3 @@
-#include "buffer.h"
 #include "compress.h"
 
 #include <zlib.h>
