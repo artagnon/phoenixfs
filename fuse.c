@@ -28,17 +28,15 @@
 #define GITFS_DBG(f, ...) while(0)
 #endif
 
-static struct env_t rootenv = {NULL, NULL, 0, 0};
-
 static void build_xpath(char *xpath, const char *path)
 {
-	strcpy(xpath, rootenv.fsback);
+	strcpy(xpath, ROOTENV->fsback);
 	strcat(xpath, path);
 }
 
 void *gitfs_init(struct fuse_conn_info *conn)
 {
-	return fuse_get_context()->private_data;
+	return ROOTENV;
 }
 
 static int gitfs_getattr(const char *path, struct stat *stbuf)
@@ -51,10 +49,10 @@ static int gitfs_getattr(const char *path, struct stat *stbuf)
 	/* memset(stbuf, 0, sizeof(struct stat)); */
 	/* stbuf->st_mode = S_IFDIR | 0755; */
 	/* stbuf->st_nlink = 2; */
-	/* stbuf->st_uid = rootenv.uid; */
-	/* stbuf->st_gid = rootenv.gid; */
-	/* stbuf->st_mtime = rootenv.now; */
-	/* stbuf->st_atime = rootenv.now; */
+	/* stbuf->st_uid = fuse_get_context()->uid; */
+	/* stbuf->st_gid = fuse_get_context()->gid; */
+	/* stbuf->st_mtime = ROOTENV->now; */
+	/* stbuf->st_atime = ROOTENV->now; */
 	/* stbuf->st_size = 4096; */
 	return 0;
 }
@@ -385,33 +383,37 @@ static struct fuse_operations gitfs_oper = {
 	.utime = gitfs_utime,
 };
 
-void gitfs_subcmd_init(const char *datapath,
-		const char *mountpoint, const char *fsback)
+void gitfs_subcmd_init(const char *datapath, const char *mountpoint,
+		const char *fsback, const char *loosedir,
+		struct env_t *rootenv)
 {
 	struct stat st;
 
-	/* Set up the rootenv */
-	rootenv.datapath = malloc(PATH_MAX * sizeof(char));
-	rootenv.mountpoint = malloc(PATH_MAX * sizeof(char));
-	rootenv.fsback = malloc(sizeof(fsback));
-	strcpy(rootenv.fsback, fsback);
+	if (!realpath(fsback, NULL))
+		die("Invalid fsback: %s", fsback);
+	if (!realpath(loosedir, NULL))
+		die("Invalid loosedir: %s", loosedir);
 	if (!realpath(datapath, NULL))
 		die("Invalid datapath: %s", datapath);
-	else if (!realpath(mountpoint, NULL))
+	if (!realpath(mountpoint, NULL))
 		die("Invalid mountpoint: %s", mountpoint);
-	strcpy(rootenv.datapath, realpath(datapath, NULL));
-	strcpy(rootenv.mountpoint, realpath(mountpoint, NULL));
+	rootenv->datapath = malloc(sizeof(realpath(datapath, NULL)));
+	rootenv->mountpoint = malloc(sizeof(realpath(mountpoint, NULL)));
+	rootenv->fsback = malloc(sizeof(realpath(fsback, NULL)));
+	rootenv->loosedir = malloc(sizeof(realpath(loosedir, NULL)));
+	strcpy(rootenv->fsback, realpath(fsback, NULL));
+	strcpy(rootenv->loosedir, realpath(loosedir, NULL));
+	strcpy(rootenv->datapath, realpath(datapath, NULL));
+	strcpy(rootenv->mountpoint, realpath(mountpoint, NULL));
+	rootenv->now = time(NULL);
 
 	/* Check that the datapath refers to a regular file */
-	if (stat(rootenv.datapath, &st) != 0 || !S_ISREG(st.st_mode))
+	if (stat(rootenv->datapath, &st) != 0 || !S_ISREG(st.st_mode))
 		die("%s is not a regular file", datapath);
 
-	rootenv.uid = getuid();
-	rootenv.gid = getgid();
-	rootenv.now = time(NULL);
-
-	GITFS_DBG("datapath: %s, mountpoint: %s, fsback: %s",
-		rootenv.datapath, rootenv.mountpoint, rootenv.fsback);
+	GITFS_DBG("datapath: %s, mountpoint: %s, fsback: %s, loosedir: %s",
+		rootenv->datapath, rootenv->mountpoint,
+		rootenv->fsback, rootenv->loosedir);
 }
 
 void gitfs_subcmd_log()
@@ -422,7 +424,7 @@ void gitfs_subcmd_diff()
 {
 }
 
-int gitfs_fuse(int argc, char *argv[])
+int gitfs_fuse(int argc, char *argv[], struct env_t *rootenv)
 {
-	return fuse_main(argc, argv, &gitfs_oper, NULL);
+	return fuse_main(argc, argv, &gitfs_oper, rootenv);
 }

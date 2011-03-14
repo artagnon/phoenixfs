@@ -13,7 +13,7 @@ struct env_t {
 	char *datapath;
 	char *mountpoint;
 	char *fsback;
-	uid_t uid, gid;
+	char *loosedir;
 	time_t now;
 };
 
@@ -25,10 +25,13 @@ enum subcmd {
 };
 
 void die(const char *err, ...);
-int gitfs_fuse(int argc, char **argv);
-void gitfs_subcmd_init(const char *mountpoint,
-		const char *datapath, const char *fsback);
+int gitfs_fuse(int argc, char *argv[], struct env_t *private_ctx);
+void gitfs_subcmd_init(const char *datapath, const char *mountpoint,
+		const char *fsback, const char *loosedir_suffix,
+		struct env_t *private_ctx);
 void gitfs_subcmd_log();
 void gitfs_subcmd_diff();
+
+#define ROOTENV ((struct env_t *) fuse_get_context()->private_data)
 
 #endif

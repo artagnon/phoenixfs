@@ -28,8 +28,10 @@ int main(int argc, char *argv[])
 {
 	int nargc = 4;
 	char **nargv = (char **) malloc(nargc * sizeof(char *));
-	char *template = "/tmp/gitfs_back";
-	mode_t template_mode = 0777;
+	char *fsback = "/tmp/gitfs_back";
+	char *loosedir = "/tmp/gitfs_back/.loose";
+	mode_t dirmode = 0777;
+	struct env_t rootenv = {NULL, NULL, NULL, NULL, 0};
 
 	nargv[0] = argv[0];
 	nargv[1] = "-d";
@@ -41,16 +43,19 @@ int main(int argc, char *argv[])
 		usage(argv[0], SUBCMD_NONE);
 
 	/* Pre init */
-	if (rmdir(template) < 0 && errno != ENOENT)
+	if (rmdir(fsback) < 0 && errno != ENOENT)
 		return -errno;
-	if (mkdir(template, template_mode) < 0)
+	if (mkdir(fsback, dirmode) < 0)
+		return -errno;
+	if (mkdir(loosedir, dirmode) < 0)
 		return -errno;
 
 	/* Subcommand dispatch routine */
 	if (!strncmp(argv[1], "mount", 5)) {
 		if (argc < 3)
 			usage(argv[0], SUBCMD_INIT);
-		gitfs_subcmd_init(argv[2], argv[3], template);
+		gitfs_subcmd_init(argv[2], argv[3], fsback,
+				loosedir, &rootenv);
 		nargv[3] = argv[3];
 	} else if (!strncmp(argv[1], "log", 3))
 		usage(argv[0], SUBCMD_LOG);
@@ -59,5 +64,5 @@ int main(int argc, char *argv[])
 	else
 		usage(argv[0], SUBCMD_NONE);
 
-	return gitfs_fuse(nargc, nargv);
+	return gitfs_fuse(nargc, nargv, &rootenv);
 }
