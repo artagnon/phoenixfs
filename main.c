@@ -4,6 +4,9 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <errno.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 static void usage(const char *progname, enum subcmd cmd)
 {
@@ -25,6 +28,8 @@ int main(int argc, char *argv[])
 {
 	int nargc = 4;
 	char **nargv = (char **) malloc(nargc * sizeof(char *));
+	char *template = "/tmp/gitfs_back";
+	mode_t template_mode = 0777;
 
 	nargv[0] = argv[0];
 	nargv[1] = "-d";
@@ -35,11 +40,17 @@ int main(int argc, char *argv[])
 	if (argc < 2)
 		usage(argv[0], SUBCMD_NONE);
 
+	/* Pre init */
+	if (rmdir(template) < 0 && errno != ENOENT)
+		return -errno;
+	if (mkdir(template, template_mode) < 0)
+		return -errno;
+
 	/* Subcommand dispatch routine */
 	if (!strncmp(argv[1], "mount", 5)) {
 		if (argc < 3)
 			usage(argv[0], SUBCMD_INIT);
-		gitfs_subcmd_init(argv[2], argv[3]);
+		gitfs_subcmd_init(argv[2], argv[3], template);
 		nargv[3] = argv[3];
 	} else if (!strncmp(argv[1], "log", 3))
 		usage(argv[0], SUBCMD_LOG);

@@ -12,6 +12,7 @@
 struct env_t {
 	char *datapath;
 	char *mountpoint;
+	char *fsback;
 	uid_t uid, gid;
 	time_t now;
 };
@@ -25,7 +26,8 @@ enum subcmd {
 
 void die(const char *err, ...);
 int gitfs_fuse(int argc, char **argv);
-void gitfs_subcmd_init(const char *mountpoint, const char *datapath);
+void gitfs_subcmd_init(const char *mountpoint,
+		const char *datapath, const char *fsback);
 void gitfs_subcmd_log();
 void gitfs_subcmd_diff();
 

@@ -32,7 +32,7 @@ static struct env_t rootenv = {NULL, NULL, 0, 0};
 
 static void build_xpath(char *xpath, const char *path)
 {
-	strcpy(xpath, rootenv.datapath);
+	strcpy(xpath, rootenv.fsback);
 	strcat(xpath, path);
 }
 
@@ -387,13 +387,16 @@ static struct fuse_operations gitfs_oper = {
 	.utime = gitfs_utime,
 };
 
-void gitfs_subcmd_init(const char *datapath, const char *mountpoint)
+void gitfs_subcmd_init(const char *datapath,
+		const char *mountpoint, const char *fsback)
 {
 	struct stat st;
 
 	/* Set up the rootenv */
 	rootenv.datapath = malloc(PATH_MAX * sizeof(char));
 	rootenv.mountpoint = malloc(PATH_MAX * sizeof(char));
+	rootenv.fsback = malloc(sizeof(fsback));
+	strcpy(rootenv.fsback, fsback);
 	if (!realpath(datapath, NULL))
 		die("Invalid datapath: %s", datapath);
 	else if (!realpath(mountpoint, NULL))
@@ -409,8 +412,8 @@ void gitfs_subcmd_init(const char *datapath, const char *mountpoint)
 	rootenv.gid = getgid();
 	rootenv.now = time(NULL);
 
-	GITFS_DBG("datapath: %s, mountpoint: %s, uid %d, gid %d",
-		rootenv.datapath, rootenv.mountpoint, rootenv.uid, rootenv.gid);
+	GITFS_DBG("datapath: %s, mountpoint: %s, fsback: %s",
+		rootenv.datapath, rootenv.mountpoint, rootenv.fsback);
 }
 
 void gitfs_subcmd_log()
