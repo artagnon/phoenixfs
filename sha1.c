@@ -21,10 +21,10 @@ int sha1_file(FILE *infile, size_t size, unsigned char *sha1)
 		in = fread(buf, 1, chunk, infile);
 		SHA1_Update(&c, buf, in);
 		done += in;
-	} while(done < size && !ferror(infile));
+	} while (done < size && !ferror(infile));
 	free(buf);
-	if (ferror(infile) || in < size)
-		die("Short SHA1 read");
+	if (ferror(infile))
+		return -done;
 	SHA1_Final(sha1, &c);
 	return 0;
 }
