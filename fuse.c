@@ -251,18 +251,23 @@ static int gitfs_create(const char *path, mode_t mode,
 static int gitfs_read(const char *path, char *buf, size_t size,
 		off_t offset, struct fuse_file_info *fi)
 {
-	if (pread(fi->fh, buf, size, offset) < 0)
-		return -ENOMEM;
+	ssize_t read_bytes;
 
-	return 0;
+	if ((read_bytes = pread(fi->fh, buf, size, offset)) < 0)
+		return -errno;
+
+	return read_bytes;
 }
 
 static int gitfs_write(const char *path, const char *buf, size_t size,
 		off_t offset, struct fuse_file_info *fi)
 {
-	if (pwrite(fi->fh, buf, size, offset) < 0)
-		return -ENOMEM;
-	return 0;
+	ssize_t written_bytes;
+
+	if ((written_bytes = pwrite(fi->fh, buf, size, offset)) < 0)
+		return -errno;
+
+	return written_bytes;
 }
 
 static int gitfs_statfs(const char *path, struct statvfs *statv)
