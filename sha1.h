@@ -9,5 +9,6 @@
 #define SHA1_Final	blk_SHA1_Final
 
 int sha1_file(FILE *infile, unsigned long size, unsigned char *sha1);
+void print_sha1(char *dst, unsigned char *sha1);
 
 #endif

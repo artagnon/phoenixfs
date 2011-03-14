@@ -13,7 +13,6 @@ static void usage(const char *progname)
 
 int main(int argc, char* argv[])
 {
-	int i;
 	FILE *infile;
 	unsigned char sha1[20];
 	struct stat st;
@@ -27,8 +26,7 @@ int main(int argc, char* argv[])
 	if (sha1_file(infile, st.st_size, sha1) < 0)
 		die("SHA1 failed");
 	fclose(infile);
-	for (i = 0; i < 20; i++)
-		printf("%02x", sha1[i]);
+	print_sha1(NULL, sha1);
 	printf("  %s\n", argv[1]);
 	return 0;
 }
