@@ -208,6 +208,34 @@ static int gitfs_open(const char *path, struct fuse_file_info *fi)
 
 	build_xpath(xpath, path);
 	GITFS_DBG("open: %s", xpath);
+	if (!access(xpath, F_OK)) {
+		FILE *infile, *outfile;
+		struct stat st;
+		unsigned char sha1[20];
+		char outfilename[40];
+		char outpath[PATH_MAX];
+		int ret;
+
+		/* Create a backup in loosedir */
+		GITFS_DBG("open: exists: %s", xpath);
+		if ((infile = fopen(xpath, "rb")) < 0)
+			return -errno;
+		if (stat(xpath, &st) < 0)
+			return -errno;
+		if ((ret = sha1_file(infile, st.st_size, sha1)) < 0)
+			return ret;
+		print_sha1(outfilename, sha1);
+		strcpy(outpath, ROOTENV->loosedir);
+		strcat(outpath, "/");
+		strcat(outpath, outfilename);
+		if ((outfile = fopen(outpath, "wb")) < 0)
+			return -errno;
+		rewind(infile);
+		buffer_copy_bytes(infile, outfile, st.st_size);
+		GITFS_DBG("open: backup: %s", outpath);
+		fclose(infile);
+		fclose(outfile);
+	}
 	if ((fd = open(xpath, fi->flags)) < 0)
 		return -errno;
 	fi->fh = fd;
