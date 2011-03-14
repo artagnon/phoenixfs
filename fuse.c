@@ -14,7 +14,6 @@
 #include <stdarg.h>
 #include <time.h>
 #include <sys/types.h>
-#include <sys/xattr.h>
 
 #if 1
 #define GITFS_DBG(f, ...) \
@@ -311,48 +310,6 @@ static int gitfs_ftruncate(const char *path,
 	return 0;
 }
 
-static int gitfs_setxattr(const char *path, const char *name,
-			const char *value, size_t size, int flags)
-{
-	char xpath[PATH_MAX];
-
-	build_xpath(xpath, path);
-	if (lsetxattr(xpath, name, value, size, flags) < 0)
-		return -errno;
-	return 0;
-}
-
-static int gitfs_getxattr(const char *path, const char *name,
-			char *value, size_t size)
-{
-	char xpath[PATH_MAX];
-
-	build_xpath(xpath, path);
-	if (lgetxattr(xpath, name, value, size) < 0)
-		return -errno;
-	return 0;
-}
-
-static int gitfs_listxattr(const char *path, char *list, size_t size)
-{
-	char xpath[PATH_MAX];
-
-	build_xpath(xpath, path);
-	if (llistxattr(xpath, list, size) < 0)
-		return -errno;
-	return 0;
-}
-
-static int gitfs_removexattr(const char *path, const char *name)
-{
-	char xpath[PATH_MAX];
-
-	build_xpath(xpath, path);
-	if (lremovexattr(xpath, name) < 0)
-		return -errno;
-	return 0;
-}
-
 static int gitfs_readlink(const char *path, char *link, size_t size)
 {
 	char xpath[PATH_MAX];
@@ -416,10 +373,6 @@ static struct fuse_operations gitfs_oper = {
 	.fsyncdir = gitfs_fsyncdir,
 	.release = gitfs_release,
 	.ftruncate = gitfs_ftruncate,
-	.setxattr = gitfs_setxattr,
-	.getxattr = gitfs_getxattr,
-	.listxattr = gitfs_listxattr,
-	.removexattr = gitfs_removexattr,
 	.symlink = gitfs_symlink,
 	.link = gitfs_link,
 	.chown = gitfs_chown,
