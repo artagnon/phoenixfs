@@ -210,9 +210,8 @@ static int gitfs_open(const char *path, struct fuse_file_info *fi)
 
 	build_xpath(xpath, path);
 	GITFS_DBG("open: %s", xpath);
-	fd = open(xpath, fi->flags);
-	if (fd < 0)
-		return -ENOMEM;
+	if ((fd = open(xpath, fi->flags)) < 0)
+		return -errno;
 	fi->fh = fd;
 
 	return 0;
@@ -241,9 +240,8 @@ static int gitfs_create(const char *path, mode_t mode,
 	int fd;
 
 	build_xpath(xpath, path);
-	fd = creat(xpath, mode);
-	if (fd < 0)
-		return -ENOMEM;
+	if ((fd = creat(xpath, mode)) < 0)
+		return -errno;
 	fi->fh = fd;
 	return 0;
 }
@@ -350,7 +348,7 @@ static int gitfs_rmdir(const char *path)
 
 	build_xpath(xpath, path);
 	if (rmdir(xpath) < 0)
-		return -ENOENT;
+		return -errno;
 	return 0;
 }
 
