@@ -14,6 +14,7 @@ BUILTIN_OBJS += compress.o
 BUILTIN_OBJS += pack.o
 BUILTIN_OBJS += sha1.o
 BUILTIN_OBJS += diff.o
+BUILTIN_OBJS += btree.o
 
 ALL_TARGETS =
 ALL_TARGETS += gitfs
