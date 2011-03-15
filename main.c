@@ -1,4 +1,5 @@
 #include "gitfs.h"
+#include <ftw.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,6 +25,14 @@ static void usage(const char *progname, enum subcmd cmd)
 	}
 }
 
+static int unlink_cb(const char *path, const struct stat *st,
+		int tflag, struct FTW *buf)
+{
+	if (remove(path) < 0)
+		return -errno;
+	return 0;
+}
+
 int main(int argc, char *argv[])
 {
 	int nargc = 4;
@@ -43,8 +52,10 @@ int main(int argc, char *argv[])
 		usage(argv[0], SUBCMD_NONE);
 
 	/* Pre init */
-	if (rmdir(fsback) < 0 && errno != ENOENT)
-		return -errno;
+	if (!access(fsback, F_OK))
+		/* rm -rf fsback */
+		if (nftw(fsback, unlink_cb, 64, FTW_DEPTH | FTW_PHYS) < 0)
+			die("Unable to remove %s", fsback);
 	if (mkdir(fsback, dirmode) < 0)
 		return -errno;
 	if (mkdir(loosedir, dirmode) < 0)
