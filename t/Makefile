@@ -10,12 +10,14 @@ BUILD_OBJS += test-pack.o
 BUILD_OBJS += test-diff.o
 BUILD_OBJS += test-sha1.o
 BUILD_OBJS += test-btree.o
+BUILD_OBJS += test-crc32.o
 
 ALL_TARGETS =
 ALL_TARGETS += test-pack
 ALL_TARGETS += test-diff
 ALL_TARGETS += test-sha1
 ALL_TARGETS += test-btree
+ALL_TARGETS += test-crc32
 
 CFLAGS = -g -O2 -Wall $(shell pkg-config fuse --cflags) $(shell pkg-config zlib --cflags)
 LDFLAGS = $(shell pkg-config fuse --libs) $(shell pkg-config zlib --libs)
@@ -70,6 +72,11 @@ test-sha1$X: test-sha1.o ../sha1.o ../common.o $(SHA1_LIB)
 test-btree$X: test-btree.o ../btree.o ../common.o
 	$(QUIET_LINK)$(CC) -I../ $(ALL_CFLAGS) -o $@ test-btree.o \
 		../btree.o ../common.o \
+		$(ALL_LDFLAGS) $(SHA1_LIB)
+
+test-crc32$X: test-crc32.o ../crc32.o ../common.o
+	$(QUIET_LINK)$(CC) -I../ $(ALL_CFLAGS) -o $@ test-crc32.o \
+		../crc32.o ../common.o \
 		$(ALL_LDFLAGS) $(SHA1_LIB)
 
 $(XDIFF_LIB): $(XDIFF_OBJS)

@@ -15,6 +15,7 @@ BUILTIN_OBJS += pack.o
 BUILTIN_OBJS += sha1.o
 BUILTIN_OBJS += diff.o
 BUILTIN_OBJS += btree.o
+BUILTIN_OBJS += crc32.o
 
 ALL_TARGETS =
 ALL_TARGETS += gitfs

@@ -2,3 +2,4 @@ test-pack
 test-diff
 test-sha1
 test-btree
+test-crc32
