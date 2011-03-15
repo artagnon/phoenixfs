@@ -1,4 +1,3 @@
-#include "gitfs.h"
 #include "diff.h"
 
 #include <stdio.h>

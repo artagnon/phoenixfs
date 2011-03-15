@@ -1,4 +1,3 @@
-#include "gitfs.h"
 #include "buffer.h"
 #include "sha1.h"
 

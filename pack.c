@@ -1,4 +1,3 @@
-#include "gitfs.h"
 #include "pack.h"
 
 #include <zlib.h>

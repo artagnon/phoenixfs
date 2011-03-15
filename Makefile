@@ -13,6 +13,7 @@ BUILTIN_OBJS += buffer.o
 BUILTIN_OBJS += compress.o
 BUILTIN_OBJS += pack.o
 BUILTIN_OBJS += sha1.o
+BUILTIN_OBJS += diff.o
 
 ALL_TARGETS =
 ALL_TARGETS += gitfs
@@ -52,12 +53,6 @@ all:: $(ALL_TARGETS)
 gitfs$X: $(BUILTIN_OBJS) $(ALL_LIBS)
 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) -o $@ $(BUILTIN_OBJS) \
 		$(ALL_LDFLAGS) $(ALL_LIBS)
-
-common.o: common.c gitfs.h
-	$(QUIET_CC)$(CC) -o $*.o -c $(ALL_CFLAGS) $<
-
-main.o: main.c gitfs.h
-	$(QUIET_CC)$(CC) -o $*.o -c $(ALL_CFLAGS) $<
 
 %.o: %.c %.h
 	$(QUIET_CC)$(CC) -o $*.o -c $(ALL_CFLAGS) $<

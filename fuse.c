@@ -13,20 +13,8 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include <time.h>
+#include <ftw.h>
 #include <sys/types.h>
-
-#if 1
-#define GITFS_DBG(f, ...) \
-{ \
-	FILE *logfh = fopen("/tmp/gitfs.log", "a");	\
-	if (logfh) { \
-		fprintf(logfh, "l. %4d: " f "\n", __LINE__, ##__VA_ARGS__); \
-		fclose(logfh); \
-	} \
-}
-#else
-#define GITFS_DBG(f, ...) while(0)
-#endif
 
 static void build_xpath(char *xpath, const char *path)
 {
@@ -84,21 +72,21 @@ static int gitfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 {
 	DIR *dp;
 	struct dirent *de;
-	struct stat st;
 
 	dp = (DIR *) (uintptr_t) fi->fh;
 
-	if (!readdir(dp))
+	if (!(de = readdir(dp)))
 		return -errno;
 
-	while ((de = readdir(dp)) != NULL) {
-		GITFS_DBG("readdir: %s", path);
-		memset(&st, 0, sizeof(st));
-		st.st_ino = de->d_ino;
-		st.st_mode = de->d_type << 12;
-		if (filler(buf, de->d_name, &st, de->d_off))
-			return -ENOMEM;
-	}
+	do {
+		GITFS_DBG("readdir: fill: %s", de->d_name);
+
+		/* Hide the .loose directory */
+		if (strcmp(de->d_name, ".loose"))
+			if (filler(buf, de->d_name, NULL, 0))
+				return -ENOMEM;
+	} while ((de = readdir(dp)) != NULL);
+
 	return 0;
 }
 
@@ -249,7 +237,7 @@ static int gitfs_mknod(const char *path, mode_t mode, dev_t dev)
 
 	build_xpath(xpath, path);
 	GITFS_DBG("mknod: %s", xpath);
-	if (mknod(path, mode, dev) < 0)
+	if (mknod(xpath, mode, dev) < 0)
 		return -errno;
 	return 0;
 }
@@ -411,7 +399,7 @@ static struct fuse_operations gitfs_oper = {
 	.utime = gitfs_utime,
 };
 
-void gitfs_subcmd_init(const char *datapath, const char *mountpoint,
+static void preinit(const char *datapath, const char *mountpoint,
 		const char *fsback, const char *loosedir,
 		struct env_t *rootenv)
 {
@@ -444,15 +432,37 @@ void gitfs_subcmd_init(const char *datapath, const char *mountpoint,
 		rootenv->fsback, rootenv->loosedir);
 }
 
-void gitfs_subcmd_log()
+static int unlink_cb(const char *path, const struct stat *st,
+		int tflag, struct FTW *buf)
 {
+	if (remove(path) < 0)
+		return -errno;
+	return 0;
 }
 
-void gitfs_subcmd_diff()
+/* gitfs mount <packfile> <mountpoint> */
+int gitfs_fuse(int argc, char *argv[])
 {
-}
+	int nargc = 4;
+	char **nargv = (char **) malloc(nargc * sizeof(char *));
+	char *fsback = "/tmp/gitfs_back";
+	char *loosedir = "/tmp/gitfs_back/.loose";
+	mode_t dirmode = 0777;
+	struct env_t rootenv = {NULL, NULL, NULL, NULL, 0};
 
-int gitfs_fuse(int argc, char *argv[], struct env_t *rootenv)
-{
-	return fuse_main(argc, argv, &gitfs_oper, rootenv);
+	if (!access(fsback, F_OK))
+		/* rm -rf fsback */
+		if (nftw(fsback, unlink_cb, 64, FTW_DEPTH | FTW_PHYS) < 0)
+			die("Unable to remove %s", fsback);
+	if (mkdir(fsback, dirmode) < 0)
+		return -errno;
+	if (mkdir(loosedir, dirmode) < 0)
+		return -errno;
+
+	preinit(argv[2], argv[3], fsback, loosedir, &rootenv);
+	nargv[0] = argv[0];
+	nargv[1] = "-d";
+	nargv[2] = "-odefault_permissions";
+	nargv[3] = argv[3];
+	return fuse_main(nargc, nargv, &gitfs_oper, &rootenv);
 }

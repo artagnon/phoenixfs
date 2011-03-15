@@ -5,8 +5,11 @@
 #define PACK_IDX_SIGNATURE 0xff744f63
 #define PACK_VERSION 2
 
+#include <stdio.h>
 #include <stdint.h>
 #include <unistd.h>
+
+#include "common.h"
 
 struct pack_header {
 	uint32_t hdr_signature;
