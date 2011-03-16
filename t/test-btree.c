@@ -2,10 +2,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 int main (int argc, char **argv)
 {
 	char *input_file;
+	unsigned char sha1[20];
 	FILE *fp;
 	node *root;
 	record *r;
@@ -30,8 +32,10 @@ int main (int argc, char **argv)
 			exit(-1);
 		}
 		while (!feof(fp)) {
-			fscanf(fp, "%d\n", &input);
-			root = insert(root, input, input);
+			fscanf(fp, "%d %s\n", &input, sha1);
+			r = malloc(sizeof(struct record));
+			memcpy(r->sha1, sha1, 20);
+			root = insert(root, input, r);
 		}
 		fclose(fp);
 		print_tree(root);
@@ -46,8 +50,10 @@ int main (int argc, char **argv)
 			print_tree(root);
 			break;
 		case 'i':
-			scanf("%d", &input);
-			root = insert(root, input, input);
+			scanf("%d %s", &input, sha1);
+			r = malloc(sizeof(struct record));
+			memcpy(r->sha1, sha1, 20);
+			root = insert(root, input, r);
 			print_tree(root);
 			break;
 		case 'f':
@@ -57,8 +63,8 @@ int main (int argc, char **argv)
 			if (r == NULL)
 				printf("Record not found under key %d.\n", input);
 			else
-				printf("Record at %lx -- key %d, value %d.\n",
-					(unsigned long)r, input, r->value);
+				printf("Record at %lx -- key %d, value %s.\n",
+					(unsigned long)r, input, r->sha1);
 			break;
 		case 'l':
 			print_leaves(root);
@@ -73,8 +79,8 @@ int main (int argc, char **argv)
 			verbose_output = !verbose_output;
 			break;
 		case 'x':
-			root = destroy_tree(root);
-			print_tree(root);
+			destroy_tree(root);
+			print_tree(NULL);
 			break;
 		default:
 			usage_2();

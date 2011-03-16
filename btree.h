@@ -2,6 +2,16 @@
 #define BTREE_H_
 
 #include <stdbool.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <limits.h>
+
+enum mode_t {
+	NODE_REGULAR,
+	NODE_SYMLINK,
+	NODE_EXECUTABLE,
+	NODE_DIRECTORY,
+};
 
 /*Type representing the record
  *to which a given key refers.
@@ -14,7 +24,11 @@
  *of the value field.
  */
 typedef struct record {
-	int value;
+	unsigned char sha1[20];
+	unsigned char symlinkfollow[PATH_MAX];
+	enum mode_t mode;
+	size_t size;
+	time_t mtime;
 } record;
 
 /*Type representing a node in the B+ tree.
@@ -47,7 +61,7 @@ typedef struct record {
  */
 typedef struct node {
 	void **pointers;
-	int *keys;
+	uint16_t *keys;
 	struct node *parent;
 	bool is_leaf;
 	int num_keys;
@@ -59,45 +73,43 @@ typedef struct node {
 
 // Output and utility.
 
-void usage_1 (void);
-void usage_2 (void);
-void enqueue (node *new_node);
-node *dequeue (void);
-int height (node *root);
-int path_to_root (node *root, node *child);
-void print_leaves (node *root);
-void print_tree (node *root);
-node *find_leaf (node *root, int key, bool verbose);
-record *find (node *root, int key, bool verbose);
-int cut (int length);
+void usage_1(void);
+void usage_2(void);
+void enqueue(node *new_node);
+node *dequeue(void);
+int height(node *root);
+int path_to_root(node *root, node *child);
+void print_leaves(node *root);
+void print_tree(node *root);
+node *find_leaf(node *root, uint16_t key, bool verbose);
+record *find(node *root, uint16_t key, bool verbose);
+int cut(int length);
 
 // Insertion.
 
-record *make_record(int value);
-node *make_node (void);
-node *make_leaf (void);
+node *make_node(void);
+node *make_leaf(void);
 int get_left_index(node *parent, node *left);
-node *insert_into_leaf (node *leaf, int key, record *pointer);
-node *insert_into_leaf_after_splitting (node *root, node *leaf, int key, record *pointer);
-node *insert_into_node (node *root, node *parent,
-		int left_index, int key, node *right);
-node *insert_into_node_after_splitting (node *root, node *parent, int left_index,
-				int key, node *right);
-node *insert_into_parent (node *root, node *left, int key, node *right);
-node *insert_into_new_root (node *left, int key, node *right);
-node *start_new_tree (int key, record *pointer);
-node *insert (node *root, int key, int value);
+node *insert_into_leaf(node *leaf, uint16_t key, record *pointer);
+node *insert_into_leaf_after_splitting(node *root, node *leaf, uint16_t key, record *pointer);
+node *insert_into_node(node *root, node *parent,
+		int left_index, uint16_t key, node *right);
+node *insert_into_node_after_splitting(node *root, node *parent, int left_index,
+				uint16_t key, node *right);
+node *insert_into_parent(node *root, node *left, uint16_t key, node *right);
+node *insert_into_new_root(node *left, uint16_t key, node *right);
+node *start_new_tree(uint16_t key, record *pointer);
+node *insert(node *root, uint16_t key, struct record *value);
 
 // Deletion.
 
-int get_neighbor_index (node *n);
-node *adjust_root (node *root);
-node *coalesce_nodes (node *root, node *n, node *neighbor, int neighbor_index, int k_prime);
-node *redistribute_nodes (node *root, node *n, node *neighbor, int neighbor_index,
+int get_neighbor_index(node *n);
+node *adjust_root(node *root);
+node *coalesce_nodes(node *root, node *n, node *neighbor, int neighbor_index, int k_prime);
+node *redistribute_nodes(node *root, node *n, node *neighbor, int neighbor_index,
 			int k_prime_index, int k_prime);
-node *delete_entry (node *root, node *n, int key, void *pointer);
-node *delete (node *root, int key);
-void destroy_tree_nodes (node *root);
-node *destroy_tree (node *root);
+node *delete_entry(node *root, node *n, uint16_t key, void *pointer);
+node *delete(node *root, uint16_t key);
+void destroy_tree(node *root);
 
 #endif

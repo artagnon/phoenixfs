@@ -84,7 +84,8 @@ bool verbose_output = false;
 
 /*First message to the user.
  */
-void usage_1 (void) {
+void usage_1(void)
+{
 	printf("B+ Tree of Order %d.\n", order);
 	printf("Following Silberschatz, Korth, Sidarshan, Database Concepts, 5th ed.\n\n");
 	printf("To build a B+ tree of a different order, start again and enter the order\n");
@@ -99,7 +100,8 @@ void usage_1 (void) {
 
 /*Second message to the user.
  */
-void usage_2 (void) {
+void usage_2(void)
+{
 	printf("Enter any of the following commands after the prompt > :\n");
 	printf("\ti <k>  -- Insert <k> (an integer) as both key and value).\n");
 	printf("\tf <k>  -- Find the value under key <k>.\n");
@@ -117,7 +119,8 @@ void usage_2 (void) {
 /*Helper function for printing the
  *tree out.  See print_tree.
  */
-void enqueue (node *new_node) {
+void enqueue(node *new_node)
+{
 	node *c;
 	if (queue == NULL) {
 		queue = new_node;
@@ -133,11 +136,11 @@ void enqueue (node *new_node) {
 	}
 }
 
-
 /*Helper function for printing the
  *tree out.  See print_tree.
  */
-node *dequeue (void) {
+node *dequeue(void)
+{
 	node *n = queue;
 	queue = queue->next;
 	n->next = NULL;
@@ -149,7 +152,8 @@ node *dequeue (void) {
  *of the tree (with their respective
  *pointers, if the verbose_output flag is set.
  */
-void print_leaves (node *root) {
+void print_leaves(node *root)
+{
 	int i;
 	node *c = root;
 	if (root == NULL) {
@@ -181,7 +185,8 @@ void print_leaves (node *root) {
  *of the tree, which length in number of edges
  *of the path from the root to any leaf.
  */
-int height (node *root) {
+int height(node *root)
+{
 	int h = 0;
 	node *c = root;
 	while (!c->is_leaf) {
@@ -195,7 +200,8 @@ int height (node *root) {
 /*Utility function to give the length in edges
  *of the path from any node to the root.
  */
-int path_to_root (node *root, node *child) {
+int path_to_root(node *root, node *child)
+{
 	int length = 0;
 	node *c = child;
 	while (c != root) {
@@ -215,8 +221,8 @@ int path_to_root (node *root, node *child) {
  *to the keys also appear next to their respective
  *keys, in hexadecimal notation.
  */
-void print_tree (node *root) {
-
+void print_tree(node *root)
+{
 	node *n = NULL;
 	int i = 0;
 	int rank = 0;
@@ -264,7 +270,8 @@ void print_tree (node *root) {
  *if the verbose flag is set.
  *Returns the leaf containing the given key.
  */
-node *find_leaf (node *root, int key, bool verbose) {
+node *find_leaf(node *root, uint16_t key, bool verbose)
+{
 	int i = 0;
 	node *c = root;
 	if (c == NULL) {
@@ -300,7 +307,8 @@ node *find_leaf (node *root, int key, bool verbose) {
 /*Finds and returns the record to which
  *a key refers.
  */
-record *find (node *root, int key, bool verbose) {
+record *find(node *root, uint16_t key, bool verbose)
+{
 	int i = 0;
 	node *c = find_leaf (root, key, verbose);
 	if (c == NULL) return NULL;
@@ -315,7 +323,8 @@ record *find (node *root, int key, bool verbose) {
 /*Finds the appropriate place to
  *split a node that is too big into two.
  */
-int cut (int length) {
+int cut(int length)
+{
 	if (length % 2 == 0)
 		return length/2;
 	else
@@ -324,26 +333,11 @@ int cut (int length) {
 
 // INSERTION
 
-/*Creates a new record to hold the value
- *to which a key refers.
- */
-record *make_record(int value) {
-	record *new_record = (record *)malloc(sizeof(record));
-	if (new_record == NULL) {
-		perror("Record creation.");
-		exit(EXIT_FAILURE);
-	}
-	else {
-		new_record->value = value;
-	}
-	return new_record;
-}
-
-
 /*Creates a new general node, which can be adapted
  *to serve as either a leaf or an internal node.
  */
-node *make_node (void) {
+node *make_node(void)
+{
 	node *new_node;
 	new_node = malloc(sizeof(node));
 	if (new_node == NULL) {
@@ -370,7 +364,8 @@ node *make_node (void) {
 /*Creates a new leaf by creating a node
  *and then adapting it appropriately.
  */
-node *make_leaf (void) {
+node *make_leaf(void)
+{
 	node *leaf = make_node();
 	leaf->is_leaf = true;
 	return leaf;
@@ -381,8 +376,8 @@ node *make_leaf (void) {
  *to find the index of the parent's pointer to
  *the node to the left of the key to be inserted.
  */
-int get_left_index(node *parent, node *left) {
-
+int get_left_index(node *parent, node *left)
+{
 	int left_index = 0;
 	while (left_index <= parent->num_keys &&
 		parent->pointers[left_index] != left)
@@ -394,8 +389,8 @@ int get_left_index(node *parent, node *left) {
  *key into a leaf.
  *Returns the altered leaf.
  */
-node *insert_into_leaf (node *leaf, int key, record *pointer) {
-
+node *insert_into_leaf(node *leaf, uint16_t key, record *pointer)
+{
 	int i, insertion_point;
 
 	insertion_point = 0;
@@ -418,8 +413,8 @@ node *insert_into_leaf (node *leaf, int key, record *pointer) {
  *the tree's order, causing the leaf to be split
  *in half.
  */
-node *insert_into_leaf_after_splitting(node *root, node *leaf, int key, record *pointer) {
-
+node *insert_into_leaf_after_splitting(node *root, node *leaf, uint16_t key, record *pointer)
+{
 	node *new_leaf;
 	int *temp_keys;
 	void **temp_pointers;
@@ -491,7 +486,8 @@ node *insert_into_leaf_after_splitting(node *root, node *leaf, int key, record *
  *without violating the B+ tree properties.
  */
 node *insert_into_node(node *root, node *n,
-			int left_index, int key, node *right) {
+			int left_index, uint16_t key, node *right)
+{
 	int i;
 
 	for (i = n->num_keys; i > left_index; i--) {
@@ -510,8 +506,8 @@ node *insert_into_node(node *root, node *n,
  *the order, and causing the node to split into two.
  */
 node *insert_into_node_after_splitting(node *root, node *old_node, int left_index,
-					int key, node *right) {
-
+					uint16_t key, node *right)
+{
 	int i, j, split, k_prime;
 	node *new_node, *child;
 	int *temp_keys;
@@ -591,8 +587,8 @@ node *insert_into_node_after_splitting(node *root, node *old_node, int left_inde
 /*Inserts a new node (leaf or internal node) into the B+ tree.
  *Returns the root of the tree after insertion.
  */
-node *insert_into_parent(node *root, node *left, int key, node *right) {
-
+node *insert_into_parent(node *root, node *left, uint16_t key, node *right)
+{
 	int left_index;
 	node *parent;
 
@@ -632,8 +628,8 @@ node *insert_into_parent(node *root, node *left, int key, node *right) {
  *and inserts the appropriate key into
  *the new root.
  */
-node *insert_into_new_root(node *left, int key, node *right) {
-
+node *insert_into_new_root(node *left, uint16_t key, node *right)
+{
 	node *root = make_node();
 	root->keys[0] = key;
 	root->pointers[0] = left;
@@ -650,8 +646,8 @@ node *insert_into_new_root(node *left, int key, node *right) {
 /*First insertion:
  *start a new tree.
  */
-node *start_new_tree(int key, record *pointer) {
-
+node *start_new_tree(uint16_t key, record *pointer)
+{
 	node *root = make_leaf();
 	root->keys[0] = key;
 	root->pointers[0] = pointer;
@@ -669,8 +665,8 @@ node *start_new_tree(int key, record *pointer) {
  *however necessary to maintain the B+ tree
  *properties.
  */
-node *insert (node *root, int key, int value) {
-
+node *insert(node *root, uint16_t key, struct record *value)
+{
 	record *pointer;
 	node *leaf;
 
@@ -684,7 +680,7 @@ node *insert (node *root, int key, int value) {
 	/*Create a new record for the
 	 *value.
 	 */
-	pointer = make_record(value);
+	pointer = value;
 
 
 	/*Case: the tree does not exist yet.
@@ -727,8 +723,8 @@ node *insert (node *root, int key, int value) {
  *is the leftmost child), returns -1 to signify
  *this special case.
  */
-int get_neighbor_index (node *n) {
-
+int get_neighbor_index(node *n)
+{
 	int i;
 
 	/*Return the index of the key to the left
@@ -748,8 +744,8 @@ int get_neighbor_index (node *n) {
 }
 
 
-node *remove_entry_from_node(node *n, int key, node *pointer) {
-
+node *remove_entry_from_node(node *n, uint16_t key, node *pointer)
+{
 	int i, num_pointers;
 
 	// Remove the key and shift other keys accordingly.
@@ -785,8 +781,8 @@ node *remove_entry_from_node(node *n, int key, node *pointer) {
 }
 
 
-node *adjust_root(node *root) {
-
+node *adjust_root(node *root)
+{
 	node *new_root;
 
 	/*Case: nonempty root.
@@ -829,8 +825,8 @@ node *adjust_root(node *root) {
  *can accept the additional entries
  *without exceeding the maximum.
  */
-node *coalesce_nodes(node *root, node *n, node *neighbor, int neighbor_index, int k_prime) {
-
+node *coalesce_nodes(node *root, node *n, node *neighbor, int neighbor_index, int k_prime)
+{
 	int i, j, neighbor_insertion_index, n_start, n_end, new_k_prime = 0;
 	node *tmp;
 	bool split;
@@ -971,8 +967,8 @@ node *coalesce_nodes(node *root, node *n, node *neighbor, int neighbor_index, in
  *maximum
  */
 node *redistribute_nodes(node *root, node *n, node *neighbor, int neighbor_index,
-			int k_prime_index, int k_prime) {
-
+			int k_prime_index, int k_prime)
+{
 	int i;
 	node *tmp;
 
@@ -1047,8 +1043,8 @@ node *redistribute_nodes(node *root, node *n, node *neighbor, int neighbor_index
  *from the leaf, and then makes all appropriate
  *changes to preserve the B+ tree properties.
  */
-node *delete_entry (node *root, node *n, int key, void *pointer) {
-
+node *delete_entry(node *root, node *n, uint16_t key, void *pointer)
+{
 	int min_keys;
 	node *neighbor;
 	int neighbor_index;
@@ -1114,12 +1110,8 @@ node *delete_entry (node *root, node *n, int key, void *pointer) {
 		return redistribute_nodes(root, n, neighbor, neighbor_index, k_prime_index, k_prime);
 }
 
-
-
-/*Master deletion function.
- */
-node *delete(node *root, int key) {
-
+node *delete(node *root, uint16_t key)
+{
 	node *key_leaf;
 	record *key_record;
 
@@ -1132,22 +1124,16 @@ node *delete(node *root, int key) {
 	return root;
 }
 
-
-void destroy_tree_nodes(node *root) {
+void destroy_tree(node *root)
+{
 	int i;
 	if (root->is_leaf)
 		for (i = 0; i < root->num_keys; i++)
 			free(root->pointers[i]);
 	else
 		for (i = 0; i < root->num_keys + 1; i++)
-			destroy_tree_nodes(root->pointers[i]);
+			destroy_tree(root->pointers[i]);
 	free(root->pointers);
 	free(root->keys);
 	free(root);
-}
-
-
-node *destroy_tree(node *root) {
-	destroy_tree_nodes(root);
-	return NULL;
 }
