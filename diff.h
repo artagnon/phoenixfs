@@ -2,6 +2,7 @@
 #define DIFF_H_
 
 #include <stdio.h>
+#include "common.h"
 #include "xdiff/xdiff.h"
 
 int xdl_diff(mmfile_t *mf1, mmfile_t *mf2, xpparam_t const *xpp,

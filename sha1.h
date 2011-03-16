@@ -1,6 +1,8 @@
 #ifndef SHA1_H_
 #define SHA1_H_
 
+#include <stdio.h>
+#include "common.h"
 #include "block-sha1/sha1.h"
 
 #define SHA1_CTX	blk_SHA_CTX
