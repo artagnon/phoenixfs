@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include <time.h>
+#include <zlib.h>
 #include <ftw.h>
 #include <sys/types.h>
 
@@ -219,7 +220,8 @@ static int gitfs_open(const char *path, struct fuse_file_info *fi)
 		if ((outfile = fopen(outpath, "wb")) < 0)
 			return -errno;
 		rewind(infile);
-		buffer_copy_bytes(infile, outfile, st.st_size);
+		if (zdeflate(infile, outfile, -1) != Z_OK)
+			GITFS_DBG("open: compression problem: %s", outpath);
 		GITFS_DBG("open: backup: %s", outpath);
 		fclose(infile);
 		fclose(outfile);

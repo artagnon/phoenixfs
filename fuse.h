@@ -12,6 +12,7 @@
 #include "common.h"
 #include "sha1.h"
 #include "buffer.h"
+#include "compress.h"
 
 #if 1
 #define GITFS_DBG(f, ...) \
