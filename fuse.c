@@ -17,12 +17,6 @@
 #include <ftw.h>
 #include <sys/types.h>
 
-static void build_xpath(char *xpath, const char *path)
-{
-	strcpy(xpath, ROOTENV->fsback);
-	strcat(xpath, path);
-}
-
 void *gitfs_init(struct fuse_conn_info *conn)
 {
 	return ROOTENV;
