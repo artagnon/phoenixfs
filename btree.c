@@ -47,9 +47,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-// Default order is 4.
-#define DEFAULT_ORDER 4
-
 // GLOBALS.
 
 /*The order determines the maximum and minimum
@@ -62,7 +59,7 @@
  *This global variable is initialized to the
  *default value.
  */
-int order = DEFAULT_ORDER;
+int order = BTREE_ORDER;
 
 /*The queue is used to print the tree in
  *level order, starting from the root
@@ -307,7 +304,7 @@ node *find_leaf(node *root, uint16_t key, bool verbose)
 /*Finds and returns the record to which
  *a key refers.
  */
-record *find(node *root, uint16_t key, bool verbose)
+void *find(node *root, uint16_t key, bool verbose)
 {
 	int i = 0;
 	node *c = find_leaf (root, key, verbose);
@@ -317,7 +314,7 @@ record *find(node *root, uint16_t key, bool verbose)
 	if (i == c->num_keys)
 		return NULL;
 	else
-		return (record *)c->pointers[i];
+		return c->pointers[i];
 }
 
 /*Finds the appropriate place to
@@ -344,12 +341,12 @@ node *make_node(void)
 		perror("Node creation.");
 		exit(EXIT_FAILURE);
 	}
-	new_node->keys = malloc ((order - 1) *sizeof(int));
+	new_node->keys = malloc ((order - 1) * sizeof(uint16_t));
 	if (new_node->keys == NULL) {
 		perror("New node keys array.");
 		exit(EXIT_FAILURE);
 	}
-	new_node->pointers = malloc (order *sizeof(void *));
+	new_node->pointers = malloc (order * sizeof(void *));
 	if (new_node->pointers == NULL) {
 		perror("New node pointers array.");
 		exit(EXIT_FAILURE);
@@ -389,7 +386,7 @@ int get_left_index(node *parent, node *left)
  *key into a leaf.
  *Returns the altered leaf.
  */
-node *insert_into_leaf(node *leaf, uint16_t key, record *pointer)
+node *insert_into_leaf(node *leaf, uint16_t key, struct dir_record *pointer)
 {
 	int i, insertion_point;
 
@@ -413,7 +410,8 @@ node *insert_into_leaf(node *leaf, uint16_t key, record *pointer)
  *the tree's order, causing the leaf to be split
  *in half.
  */
-node *insert_into_leaf_after_splitting(node *root, node *leaf, uint16_t key, record *pointer)
+node *insert_into_leaf_after_splitting(node *root, node *leaf,
+				uint16_t key, struct dir_record *pointer)
 {
 	node *new_leaf;
 	int *temp_keys;
@@ -422,7 +420,7 @@ node *insert_into_leaf_after_splitting(node *root, node *leaf, uint16_t key, rec
 
 	new_leaf = make_leaf();
 
-	temp_keys = malloc (order *sizeof(int));
+	temp_keys = malloc (order * sizeof(uint16_t));
 	if (temp_keys == NULL) {
 		perror("Temporary keys array.");
 		exit(EXIT_FAILURE);
@@ -527,7 +525,7 @@ node *insert_into_node_after_splitting(node *root, node *old_node, int left_inde
 		perror("Temporary pointers array for splitting nodes.");
 		exit(EXIT_FAILURE);
 	}
-	temp_keys = malloc (order *sizeof(int));
+	temp_keys = malloc (order *sizeof(uint16_t));
 	if (temp_keys == NULL) {
 		perror("Temporary keys array for splitting nodes.");
 		exit(EXIT_FAILURE);
@@ -646,7 +644,7 @@ node *insert_into_new_root(node *left, uint16_t key, node *right)
 /*First insertion:
  *start a new tree.
  */
-node *start_new_tree(uint16_t key, record *pointer)
+node *start_new_tree(uint16_t key, struct dir_record *pointer)
 {
 	node *root = make_leaf();
 	root->keys[0] = key;
@@ -665,9 +663,9 @@ node *start_new_tree(uint16_t key, record *pointer)
  *however necessary to maintain the B+ tree
  *properties.
  */
-node *insert(node *root, uint16_t key, struct record *value)
+node *insert(node *root, uint16_t key, void *value)
 {
-	record *pointer;
+	struct dir_record *pointer;
 	node *leaf;
 
 	/*The current implementation ignores
@@ -1113,7 +1111,7 @@ node *delete_entry(node *root, node *n, uint16_t key, void *pointer)
 node *delete(node *root, uint16_t key)
 {
 	node *key_leaf;
-	record *key_record;
+	struct dir_record *key_record;
 
 	key_record = find(root, key, false);
 	key_leaf = find_leaf(root, key, false);

@@ -6,30 +6,16 @@
 #include <stdint.h>
 #include <limits.h>
 
+#define BTREE_ORDER 20
+
+/* How many revisions of each file to store */
+#define REV_TRUNCATE 20
+
 enum mode_t {
 	NODE_REGULAR,
 	NODE_SYMLINK,
 	NODE_EXECUTABLE,
-	NODE_DIRECTORY,
 };
-
-/*Type representing the record
- *to which a given key refers.
- *In a real B+ tree system, the
- *record would hold data (in a database)
- *or a file (in an operating system)
- *or some other information.
- *Users can rewrite this part of the code
- *to change the type and content
- *of the value field.
- */
-typedef struct record {
-	unsigned char sha1[20];
-	unsigned char symlinkfollow[PATH_MAX];
-	enum mode_t mode;
-	size_t size;
-	time_t mtime;
-} record;
 
 /*Type representing a node in the B+ tree.
  *This type is general enough to serve for both
@@ -68,6 +54,23 @@ typedef struct node {
 	struct node *next; // Used for queue.
 } node;
 
+struct file_record {
+	enum mode_t mode;
+	unsigned char sha1[20];
+	size_t size;
+	time_t mtime;
+};
+
+struct vfile_record {
+	unsigned char name[PATH_MAX];
+	struct file_record *history[REV_TRUNCATE];
+	int HEAD;
+};
+
+struct dir_record {
+	unsigned char name[PATH_MAX];
+	struct node *vroot;
+};
 
 // FUNCTION PROTOTYPES.
 
@@ -82,7 +85,7 @@ int path_to_root(node *root, node *child);
 void print_leaves(node *root);
 void print_tree(node *root);
 node *find_leaf(node *root, uint16_t key, bool verbose);
-record *find(node *root, uint16_t key, bool verbose);
+void *find(node *root, uint16_t key, bool verbose);
 int cut(int length);
 
 // Insertion.
@@ -90,16 +93,16 @@ int cut(int length);
 node *make_node(void);
 node *make_leaf(void);
 int get_left_index(node *parent, node *left);
-node *insert_into_leaf(node *leaf, uint16_t key, record *pointer);
-node *insert_into_leaf_after_splitting(node *root, node *leaf, uint16_t key, record *pointer);
+node *insert_into_leaf(node *leaf, uint16_t key, struct dir_record *pointer);
+node *insert_into_leaf_after_splitting(node *root, node *leaf, uint16_t key, struct dir_record *pointer);
 node *insert_into_node(node *root, node *parent,
 		int left_index, uint16_t key, node *right);
 node *insert_into_node_after_splitting(node *root, node *parent, int left_index,
 				uint16_t key, node *right);
 node *insert_into_parent(node *root, node *left, uint16_t key, node *right);
 node *insert_into_new_root(node *left, uint16_t key, node *right);
-node *start_new_tree(uint16_t key, record *pointer);
-node *insert(node *root, uint16_t key, struct record *value);
+node *start_new_tree(uint16_t key, struct dir_record *pointer);
+node *insert(node *root, uint16_t key, void *value);
 
 // Deletion.
 

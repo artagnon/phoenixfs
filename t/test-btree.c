@@ -3,26 +3,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 int main (int argc, char **argv)
 {
 	char *input_file;
-	unsigned char sha1[20];
 	FILE *fp;
 	node *root;
-	record *r;
 	int input;
 	char instruction;
-	int order = 4;
 	bool verbose_output = true;
+	struct dir_record *dr;
+	char path[PATH_MAX];
 
 	root = NULL;
-
-	if (argc > 1) {
-		order = atoi(argv[1]);
-		if (order < 3 || order > 20)
-			exit(-1);
-	}
 
 	if (argc > 2) {
 		input_file = argv[2];
@@ -32,10 +26,10 @@ int main (int argc, char **argv)
 			exit(-1);
 		}
 		while (!feof(fp)) {
-			fscanf(fp, "%d %s\n", &input, sha1);
-			r = malloc(sizeof(struct record));
-			memcpy(r->sha1, sha1, 20);
-			root = insert(root, input, r);
+			fscanf(fp, "%d %s\n", &input, path);
+			dr = malloc(sizeof(struct dir_record));
+			memcpy(dr->name, path, strlen(path));
+			root = insert(root, input, dr);
 		}
 		fclose(fp);
 		print_tree(root);
@@ -50,21 +44,21 @@ int main (int argc, char **argv)
 			print_tree(root);
 			break;
 		case 'i':
-			scanf("%d %s", &input, sha1);
-			r = malloc(sizeof(struct record));
-			memcpy(r->sha1, sha1, 20);
-			root = insert(root, input, r);
+			scanf("%d %s", &input, path);
+			dr = malloc(sizeof(struct dir_record));
+			memcpy(dr->name, path, strlen(path));
+			root = insert(root, input, dr);
 			print_tree(root);
 			break;
 		case 'f':
 		case 'p':
 			scanf("%d", &input);
-			r = find(root, input, instruction == 'p');
-			if (r == NULL)
+			dr = find(root, input, instruction == 'p');
+			if (dr == NULL)
 				printf("Record not found under key %d.\n", input);
 			else
 				printf("Record at %lx -- key %d, value %s.\n",
-					(unsigned long)r, input, r->sha1);
+					(unsigned long)dr, input, dr->name);
 			break;
 		case 'l':
 			print_leaves(root);
