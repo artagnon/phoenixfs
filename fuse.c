@@ -53,8 +53,8 @@ static int gitfs_opendir(const char *path, struct fuse_file_info *fi)
 	DIR *dp;
 	char xpath[PATH_MAX];
 
+	GITFS_DBG("opendir:: %s", path);
 	build_xpath(xpath, path);
-	GITFS_DBG("opendir: %s", xpath);
 	dp = opendir(xpath);
 	if (!dp)
 		return -errno;
@@ -102,6 +102,7 @@ static int gitfs_access(const char *path, int mask)
 {
 	char xpath[PATH_MAX];
 
+	GITFS_DBG("access:: %s", path);
 	build_xpath(xpath, path);
 	if (access(xpath, mask) < 0)
 		return -errno;
@@ -123,9 +124,9 @@ static int gitfs_rename(const char *path, const char *newpath)
 	char xpath[PATH_MAX];
 	char xnewpath[PATH_MAX];
 
+	GITFS_DBG("rename:: %s to %s", path, newpath);
 	build_xpath(xpath, path);
 	build_xpath(xnewpath, newpath);
-	GITFS_DBG("rename: %s to %s", xpath, xnewpath);
 	if (rename(xpath, xnewpath) < 0)
 		return -errno;
 	return 0;
@@ -136,9 +137,9 @@ static int gitfs_link(const char *path, const char *newpath)
 	char xpath[PATH_MAX];
 	char xnewpath[PATH_MAX];
 
+	GITFS_DBG("link:: %s to %s", path, newpath);
 	build_xpath(xpath, path);
 	build_xpath(xnewpath, newpath);
-	GITFS_DBG("link: %s to %s", xpath, xnewpath);
 	if (link(xpath, xnewpath) < 0)
 		return -errno;
 	return 0;
@@ -189,6 +190,7 @@ static int gitfs_open(const char *path, struct fuse_file_info *fi)
 	static char xpath[PATH_MAX];
 	int fd;
 
+	GITFS_DBG("open:: %s", path);
 	build_xpath(xpath, path);
 	GITFS_DBG("open: %s", xpath);
 	if (!access(xpath, F_OK)) {
@@ -231,8 +233,8 @@ static int gitfs_mknod(const char *path, mode_t mode, dev_t dev)
 {
 	char xpath[PATH_MAX];
 
+	GITFS_DBG("mknod:: %s", path);
 	build_xpath(xpath, path);
-	GITFS_DBG("mknod: %s", xpath);
 	if (mknod(xpath, mode, dev) < 0)
 		return -errno;
 	return 0;
@@ -249,6 +251,7 @@ static int gitfs_create(const char *path, mode_t mode,
 	char xpath[PATH_MAX];
 	int fd;
 
+	GITFS_DBG("create:: %s", path);
 	build_xpath(xpath, path);
 	if ((fd = creat(xpath, mode)) < 0)
 		return -errno;
@@ -295,6 +298,7 @@ static int gitfs_flush(const char *path, struct fuse_file_info *fi)
 
 static int gitfs_release(const char *path, struct fuse_file_info *fi)
 {
+	GITFS_DBG("release:: %s", path);
 	if (close(fi->fh) < 0)
 		return -errno;
 	return 0;
@@ -423,9 +427,8 @@ static void preinit(const char *datapath, const char *mountpoint,
 	if (stat(rootenv->datapath, &st) != 0 || !S_ISREG(st.st_mode))
 		die("%s is not a regular file", datapath);
 
-	GITFS_DBG("datapath: %s, mountpoint: %s, fsback: %s, loosedir: %s",
-		rootenv->datapath, rootenv->mountpoint,
-		rootenv->fsback, rootenv->loosedir);
+	GITFS_DBG("preinit:: datapath: %s, mountpoint: %s, fsback: %s",
+		rootenv->datapath, rootenv->mountpoint,	rootenv->fsback);
 }
 
 static int unlink_cb(const char *path, const struct stat *st,

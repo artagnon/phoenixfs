@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
-static struct node *fsroot;
+static struct node *fsroot = NULL;
 
 void build_xpath(char *xpath, const char *path)
 {
@@ -16,21 +16,21 @@ void build_xpath(char *xpath, const char *path)
 }
 
 /* filename is simply a pointer, while dirname is malloc'ed freshly */
-int split_basename(const char *path, char *dirname, char *filename)
+/* filename is simply a pointer; dirname must have alloc'ed memory */
+char *split_basename(const char *path, char *dirname)
 {
 	int length;
+	char *filename;
 
 	filename = strrchr(path, '/');
 	length = strlen(path) - strlen(filename);
 	/* Empty path is represented by '/' */
 	length = (length ? length + 1 : 2);
-	if (!(dirname = malloc((length) * sizeof(char))))
-		return -1;
-	strncpy(dirname, path, length - 1);
+	memcpy(dirname, path, length - 1);
 	dirname[length - 1] = '\0';
 	GITFS_DBG("split_basename:: path: %s, dirname: %s, filename: %s",
 		path, dirname, filename);
-	return 0;
+	return filename;
 }
 
 void fill_stat(struct stat *st, struct file_record *fr)
@@ -78,11 +78,15 @@ struct dir_record *find_dr(const char *path)
 {
 	uint16_t key = ~0;
 	void *record;
+	size_t length;
 
-	GITFS_DBG("find_dr:: %s", path);
-	compute_crc32(key, (const unsigned char *) path, strlen(path));
-	if (!(record = find(fsroot, key, 0)))
+	length = (size_t) strlen((char *) path);
+	key = compute_crc32(key, (const unsigned char *) path, length);
+	if (!(record = find(fsroot, key, 0))) {
+		GITFS_DBG("find_dr:: not found %s", path);
 		return NULL;
+	}
+	GITFS_DBG("find_dr:: found %s", path);
 	return ((struct dir_record *) record);
 }
 
@@ -90,18 +94,22 @@ struct vfile_record *find_vfr(const char *path)
 {
 	uint16_t key = ~0;
 	struct dir_record *dr;
-	char *dirname, *filename;
+	char dirname[PATH_MAX], *filename;
 	void *record;
+	size_t length;
 
-	dirname = NULL;
-	filename = NULL;
-	split_basename(path, dirname, filename);
-	if (!(dr = find_dr(dirname)) || !dr->vroot)
+	filename = split_basename(path, dirname);
+	if (!(dr = find_dr(dirname)) || !dr->vroot) {
+		GITFS_DBG("find_vfr:: not found %s", path);
 		return NULL;
-	compute_crc32(key, (const unsigned char *) filename,
-		(size_t) strlen((char *) filename));
-	if (!(record = find(dr->vroot, key, 0)))
+	}
+	length = (size_t) strlen((char *) filename);
+	key = compute_crc32(key, (const unsigned char *) filename, length);
+	if (!(record = find(dr->vroot, key, 0))) {
+		GITFS_DBG("find_vfr:: not found %s", path);
 		return NULL;
+	}
+	GITFS_DBG("find_vfr:: found %s", path);
 	return ((struct vfile_record *) record);
 }
 
@@ -110,30 +118,39 @@ struct file_record *find_fr(const char *path, int rev)
 	struct vfile_record *vfr;
 	struct file_record *record;
 
-	if (!(vfr = find_vfr(path)))
+	if (!(vfr = find_vfr(path))) {
+		GITFS_DBG("find_fr:: not found %s", path);
 		return NULL;
+	}
 	if (rev < 0)
 		rev = vfr->HEAD;
-	if (!(record = vfr->history[rev]))
+	if (!(record = vfr->history[rev])) {
+		GITFS_DBG("find_fr:: not found %s", path);
 		return NULL;
+	}
+	GITFS_DBG("find_fr:: found %s", path);
 	return record;
 }
 
 void insert_dr(struct dir_record *dr)
 {
 	uint16_t key = ~0;
+	size_t length;
 
-	compute_crc32(key, (const unsigned char *) dr->name,
-		(size_t) strlen((char *) dr->name));
+	length = (size_t) strlen((char *) dr->name);
+	key = compute_crc32(key, (const unsigned char *) dr->name, length);
+	GITFS_DBG("insert_dr:: %08X", key);
 	fsroot = insert(fsroot, key, dr);
 }
 
 void insert_vfr(struct dir_record *dr, struct vfile_record *vfr)
 {
 	uint16_t key = ~0;
+	size_t length;
 
-	compute_crc32(key, (const unsigned char *) vfr->name,
-		(size_t) strlen((char *) vfr->name));
+	length = (size_t) strlen((char *) vfr->name);
+	key = compute_crc32(key, (const unsigned char *) vfr->name, length);
+	GITFS_DBG("insert_vfr:: %08X", key);
 	dr->vroot = insert(dr->vroot, key, vfr);
 }
 
@@ -141,6 +158,7 @@ void insert_fr(struct vfile_record *vfr, struct file_record *fr)
 {
 	int newHEAD;
 
+	GITFS_DBG("insert_fr:: %lu", (unsigned long) fr);
 	newHEAD = (vfr->HEAD + 1) % REV_TRUNCATE;
 	vfr->history[newHEAD] = fr;
 	vfr->HEAD = newHEAD;
@@ -174,51 +192,32 @@ struct file_record *make_fr(const char *path)
 {
 	struct file_record *fr;
 	unsigned char sha1[20];
+	char xpath[PATH_MAX];
 	struct stat st;
 	FILE *infile;
 
 	GITFS_DBG("make_fr:: %s", path);
 	if (!(fr = malloc(sizeof(struct file_record))))
 		return NULL;
-	if (!(infile = fopen(path, "rb")) ||
-		(stat(path, &st) < 0) ||
-		(sha1_file(infile, st.st_size, sha1) < 0)) {
-		fclose(infile);
+	build_xpath(xpath, path);
+	if (!(infile = fopen(xpath, "rb")) ||
+		(stat(xpath, &st) < 0) ||
+		(sha1_file(infile, st.st_size, sha1) < 0))
 		return NULL;
-	}
 	fclose(infile);
 	memcpy(fr->sha1, sha1, 20);
 	fill_fr(fr, &st);
 	return fr;
 }
 
-void ls_dir(const char *path, struct node *root, struct node *iter)
-{
-	struct dir_record *dr;
-
-	if (!(dr = find_dr(path)) || !dr->vroot) {
-		root = NULL;
-		iter = NULL;
-		return;
-	}
-	root = dr->vroot;
-	iter = dr->vroot;
-
-	/* Return only the leaves */
-	while (!iter->is_leaf)
-		iter = iter->pointers[0];
-}
-
-void insert_update_file(const char *path)
+void fstree_insert_update_file(const char *path)
 {
 	struct dir_record *dr;
 	struct vfile_record *vfr;
 	struct file_record *fr;
-	char *dirname, *filename;
+	char dirname[PATH_MAX], *filename = NULL;
 
-	dirname = NULL;
-	filename = NULL;
-	split_basename(path, dirname, filename);
+	filename = split_basename(path, dirname);
 	if (!(dr = find_dr(dirname)))
 		goto DR;
 	else {

@@ -22,8 +22,9 @@ struct env_t {
 
 void build_xpath(char *xpath, const char *path);
 void fill_stat(struct stat *st, struct file_record *fr);
-void ls_dir(const char *path, struct node *root, struct node *iter);
-void insert_update_file(const char *path);
+struct dir_record *find_dr(const char *path);
+struct file_record *find_fr(const char *path, int rev);
+void fstree_insert_update_file(const char *path);
 void print_fstree(void);
 
 #define ROOTENV ((struct env_t *) fuse_get_context()->private_data)
