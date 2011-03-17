@@ -12,6 +12,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdarg.h>
+#include <dirent.h>
 #include <time.h>
 #include <zlib.h>
 #include <ftw.h>
@@ -29,14 +30,6 @@ static int gitfs_getattr(const char *path, struct stat *stbuf)
 	build_xpath(xpath, path);
 	if (lstat(xpath, stbuf) < 0)
 		return -errno;
-	/* memset(stbuf, 0, sizeof(struct stat)); */
-	/* stbuf->st_mode = S_IFDIR | 0755; */
-	/* stbuf->st_nlink = 2; */
-	/* stbuf->st_uid = fuse_get_context()->uid; */
-	/* stbuf->st_gid = fuse_get_context()->gid; */
-	/* stbuf->st_mtime = ROOTENV->now; */
-	/* stbuf->st_atime = ROOTENV->now; */
-	/* stbuf->st_size = 4096; */
 	return 0;
 }
 
@@ -67,21 +60,57 @@ static int gitfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 {
 	DIR *dp;
 	struct dirent *de;
+	struct stat st;
+	void *record;
+	struct node *iter_root, *iter;
+	struct vfile_record *vfr;
+	struct dir_record *dr;
+	register int i;
+	unsigned char *name;
 
 	dp = (DIR *) (uintptr_t) fi->fh;
 
 	if (!(de = readdir(dp)))
 		return -errno;
 
+	/* Fill directories from backing FS */
 	do {
-		GITFS_DBG("readdir: fill: %s", de->d_name);
-
-		/* Hide the .loose directory */
-		if (strcmp(de->d_name, ".loose"))
+		/* Hide the .loose directory, and enumerate only directories */
+		if (strcmp(de->d_name, ".loose") && de->d_type == DT_DIR) {
+			GITFS_DBG("readdir:: fs: %s", de->d_name);
 			if (filler(buf, de->d_name, NULL, 0))
 				return -ENOMEM;
+		}
 	} while ((de = readdir(dp)) != NULL);
 
+	/* Fill files from fstree */
+	if (!(dr = find_dr(path)) || !dr->vroot) {
+		GITFS_DBG("readdir:: fstree: blank");
+		return 0;
+	}
+	iter_root = dr->vroot;
+	iter = dr->vroot;
+
+	/* Use only the leaves */
+	while (!iter->is_leaf)
+		iter = iter->pointers[0];
+
+	while (1) {
+		for (i = 0; i < iter->num_keys; i++) {
+			if (!(record = find(iter_root, iter->keys[i], 0)))
+				GITFS_DBG("readdir:: key listing issue");
+			vfr = (struct vfile_record *) record;
+			fill_stat(&st, vfr->history[vfr->HEAD]);
+			name = vfr->name + 1; /* Strip leading slash */
+			GITFS_DBG("readdir:: tree fill: %s", (const char *) name);
+			if (filler(buf, (const char *) name, &st, 0))
+				return -ENOMEM;
+		}
+		if (iter->pointers[BTREE_ORDER - 1] != NULL)
+			iter = iter->pointers[BTREE_ORDER - 1];
+		else
+			break;
+	}
 	return 0;
 }
 
@@ -187,41 +216,11 @@ static int gitfs_utime(const char *path, struct utimbuf *ubuf)
 
 static int gitfs_open(const char *path, struct fuse_file_info *fi)
 {
-	static char xpath[PATH_MAX];
+	char xpath[PATH_MAX];
 	int fd;
 
 	GITFS_DBG("open:: %s", path);
 	build_xpath(xpath, path);
-	GITFS_DBG("open: %s", xpath);
-	if (!access(xpath, F_OK)) {
-		FILE *infile, *outfile;
-		struct stat st;
-		unsigned char sha1[20];
-		char outfilename[40];
-		char outpath[PATH_MAX];
-		int ret;
-
-		/* Create a backup in loosedir */
-		GITFS_DBG("open: exists: %s", xpath);
-		if ((infile = fopen(xpath, "rb")) < 0)
-			return -errno;
-		if (stat(xpath, &st) < 0)
-			return -errno;
-		if ((ret = sha1_file(infile, st.st_size, sha1)) < 0)
-			return ret;
-		print_sha1(outfilename, sha1);
-		strcpy(outpath, ROOTENV->loosedir);
-		strcat(outpath, "/");
-		strcat(outpath, outfilename);
-		if ((outfile = fopen(outpath, "wb")) < 0)
-			return -errno;
-		rewind(infile);
-		if (zdeflate(infile, outfile, -1) != Z_OK)
-			GITFS_DBG("open: compression problem: %s", outpath);
-		GITFS_DBG("open: backup: %s", outpath);
-		fclose(infile);
-		fclose(outfile);
-	}
 	if ((fd = open(xpath, fi->flags)) < 0)
 		return -errno;
 	fi->fh = fd;
@@ -256,6 +255,10 @@ static int gitfs_create(const char *path, mode_t mode,
 	if ((fd = creat(xpath, mode)) < 0)
 		return -errno;
 	fi->fh = fd;
+
+	/* Update the fstree */
+	fstree_insert_update_file(path);
+
 	return 0;
 }
 
@@ -298,9 +301,44 @@ static int gitfs_flush(const char *path, struct fuse_file_info *fi)
 
 static int gitfs_release(const char *path, struct fuse_file_info *fi)
 {
+	FILE *infile, *outfile;
+	struct stat st;
+	unsigned char sha1[20];
+	char outfilename[40];
+	char outpath[PATH_MAX];
+	char xpath[PATH_MAX];
+	int ret;
+
 	GITFS_DBG("release:: %s", path);
+
+	/* Backup this revision before creating a new one */
+	build_xpath(xpath, path);
+	if ((infile = fopen(xpath, "rb")) < 0)
+		return -errno;
+	if (stat(xpath, &st) < 0)
+		return -errno;
+	if ((ret = sha1_file(infile, st.st_size, sha1)) < 0)
+		return ret;
+	print_sha1(outfilename, sha1);
+	strcpy(outpath, ROOTENV->loosedir);
+	strcat(outpath, "/");
+	strcat(outpath, outfilename);
+	if ((outfile = fopen(outpath, "wb")) < 0)
+		return -errno;
+	rewind(infile);
+	if (zdeflate(infile, outfile, -1) != Z_OK)
+		GITFS_DBG("release:: compression problem: %s", outpath);
+	fflush(outfile);
+	fclose(infile);
+	fclose(outfile);
+	GITFS_DBG("release:: backup: %s", outpath);
+
 	if (close(fi->fh) < 0)
 		return -errno;
+
+	/* Update the fstree */
+	fstree_insert_update_file(path);
+
 	return 0;
 }
 

@@ -4,6 +4,7 @@
 #define FUSE_USE_VERSION 26
 #define _XOPEN_SOURCE 500
 #define GITFS_MAGIC 0x2888
+#define DT_DIR 4
 
 #include <sys/stat.h>
 #include <unistd.h>
