@@ -16,11 +16,12 @@ struct env_t {
 	char *datapath;
 	char *mountpoint;
 	char *fsback;
-	char *loosedir;
+	char *metadir;
 	time_t now;
 };
 
-void build_xpath(char *xpath, const char *path);
+int parse_pathspec(char *xpath, const char *path);
+void build_xpath(char *xpath, const char *path, int rev);
 void fill_stat(struct stat *st, struct file_record *fr);
 struct dir_record *find_dr(const char *path);
 struct file_record *find_fr(const char *path, int rev);

@@ -9,13 +9,47 @@
 
 static struct node *fsroot = NULL;
 
-void build_xpath(char *xpath, const char *path)
+/* Pathspec: <path>[@<rev>] */
+int parse_pathspec(char *xpath, const char *path)
 {
-	strcpy(xpath, ROOTENV->fsback);
-	strcat(xpath, path);
+	int revision;
+	char *split;
+
+	if (!(split = strrchr(path, '@')))
+		goto END;
+	revision = atoi(split + 1);
+	if (revision < 0 || revision > 20)
+		goto END;
+	memcpy(xpath, path, split - path);
+	xpath[split - path] = '\0';
+	return revision;
+END:
+	strcpy(xpath, path);
+	return -1;
 }
 
-/* filename is simply a pointer, while dirname is malloc'ed freshly */
+void build_xpath(char *xpath, const char *path, int rev)
+{
+	struct file_record *fr;
+	char sha1_digest[40];
+
+	if (rev == -1) {
+		/* Search on FS */
+		strcpy(xpath, ROOTENV->fsback);
+		strcat(xpath, path);
+		return;
+	}
+	if (!(fr = find_fr(path, rev))) {
+		/* Invalid revision */
+		GITFS_DBG("build_xpath:: missing: %s@%d", path, rev);
+		strcpy(xpath, path);
+	}
+	strcpy(xpath, ROOTENV->metadir);
+	strcat(xpath, "/loose/");
+	print_sha1(sha1_digest, fr->sha1);
+	strcat(xpath, sha1_digest);
+}
+
 /* filename is simply a pointer; dirname must have alloc'ed memory */
 char *split_basename(const char *path, char *dirname)
 {
@@ -124,6 +158,8 @@ struct file_record *find_fr(const char *path, int rev)
 	}
 	if (rev < 0)
 		rev = vfr->HEAD;
+	else
+		rev = (vfr->HEAD - rev) % REV_TRUNCATE;
 	if (!(record = vfr->history[rev])) {
 		GITFS_DBG("find_fr:: not found %s", path);
 		return NULL;
@@ -158,10 +194,10 @@ void insert_fr(struct vfile_record *vfr, struct file_record *fr)
 {
 	int newHEAD;
 
-	GITFS_DBG("insert_fr:: %lu", (unsigned long) fr);
 	newHEAD = (vfr->HEAD + 1) % REV_TRUNCATE;
 	vfr->history[newHEAD] = fr;
 	vfr->HEAD = newHEAD;
+	GITFS_DBG("insert_fr:: [%d] %lu", vfr->HEAD, (unsigned long) fr);
 }
 
 struct dir_record *make_dr(const char *path)
@@ -199,7 +235,7 @@ struct file_record *make_fr(const char *path)
 	GITFS_DBG("make_fr:: %s", path);
 	if (!(fr = malloc(sizeof(struct file_record))))
 		return NULL;
-	build_xpath(xpath, path);
+	build_xpath(xpath, path, -1);
 	if (!(infile = fopen(xpath, "rb")) ||
 		(stat(xpath, &st) < 0) ||
 		(sha1_file(infile, st.st_size, sha1) < 0))
