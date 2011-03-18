@@ -25,29 +25,31 @@ int parse_pathspec(char *xpath, const char *path)
 	return revision;
 END:
 	strcpy(xpath, path);
-	return -1;
+	return 0;
 }
 
-void build_xpath(char *xpath, const char *path, int rev)
+int build_xpath(char *xpath, const char *path, int rev)
 {
 	struct file_record *fr;
 	char sha1_digest[40];
 
-	if (rev == -1) {
+	if (!rev) {
 		/* Search on FS */
 		strcpy(xpath, ROOTENV->fsback);
 		strcat(xpath, path);
-		return;
+		return 0;
 	}
 	if (!(fr = find_fr(path, rev))) {
-		/* Invalid revision */
 		GITFS_DBG("build_xpath:: missing: %s@%d", path, rev);
+		/* Might be a directory; copy and give to caller */
 		strcpy(xpath, path);
+		return -1;
 	}
 	strcpy(xpath, ROOTENV->metadir);
 	strcat(xpath, "/loose/");
 	print_sha1(sha1_digest, fr->sha1);
 	strcat(xpath, sha1_digest);
+	return 0;
 }
 
 /* filename is simply a pointer; dirname must have alloc'ed memory */
@@ -156,10 +158,8 @@ struct file_record *find_fr(const char *path, int rev)
 		GITFS_DBG("find_fr:: not found %s", path);
 		return NULL;
 	}
-	if (rev < 0)
-		rev = vfr->HEAD;
-	else
-		rev = (vfr->HEAD - rev) % REV_TRUNCATE;
+	/* Translate rev to mean "number of revs before HEAD" */
+	rev = (vfr->HEAD - rev) % REV_TRUNCATE;
 	if (!(record = vfr->history[rev])) {
 		GITFS_DBG("find_fr:: not found %s", path);
 		return NULL;
@@ -197,7 +197,7 @@ void insert_fr(struct vfile_record *vfr, struct file_record *fr)
 	newHEAD = (vfr->HEAD + 1) % REV_TRUNCATE;
 	vfr->history[newHEAD] = fr;
 	vfr->HEAD = newHEAD;
-	GITFS_DBG("insert_fr:: [%d] %lu", vfr->HEAD, (unsigned long) fr);
+	GITFS_DBG("insert_fr:: %s [%d]", vfr->name, vfr->HEAD);
 }
 
 struct dir_record *make_dr(const char *path)
@@ -235,7 +235,7 @@ struct file_record *make_fr(const char *path)
 	GITFS_DBG("make_fr:: %s", path);
 	if (!(fr = malloc(sizeof(struct file_record))))
 		return NULL;
-	build_xpath(xpath, path, -1);
+	build_xpath(xpath, path, 0);
 	if (!(infile = fopen(xpath, "rb")) ||
 		(stat(xpath, &st) < 0) ||
 		(sha1_file(infile, st.st_size, sha1) < 0))
@@ -260,7 +260,7 @@ void fstree_insert_update_file(const char *path)
 		if (!(vfr = find_vfr(path)))
 			goto VFR;
 		else {
-			fr = find_fr(path, -1);
+			fr = find_fr(path, 0);
 			goto FR;
 		}
 	}

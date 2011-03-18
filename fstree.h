@@ -21,9 +21,10 @@ struct env_t {
 };
 
 int parse_pathspec(char *xpath, const char *path);
-void build_xpath(char *xpath, const char *path, int rev);
+int build_xpath(char *xpath, const char *path, int rev);
 void fill_stat(struct stat *st, struct file_record *fr);
 struct dir_record *find_dr(const char *path);
+struct vfile_record *find_vfr(const char *path);
 struct file_record *find_fr(const char *path, int rev);
 void fstree_insert_update_file(const char *path);
 void print_fstree(void);

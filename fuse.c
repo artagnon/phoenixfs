@@ -19,6 +19,7 @@
 #include <sys/types.h>
 
 static char xpath[PATH_MAX] = "\0";
+static char openpath[PATH_MAX] = "\0";
 
 void *gitfs_init(struct fuse_conn_info *conn)
 {
@@ -28,7 +29,6 @@ void *gitfs_init(struct fuse_conn_info *conn)
 static int gitfs_getattr(const char *path, struct stat *stbuf)
 {
 	struct file_record *fr;
-	static char openpath[PATH_MAX];
 	int rev;
 
 	rev = parse_pathspec(xpath, path);
@@ -36,7 +36,7 @@ static int gitfs_getattr(const char *path, struct stat *stbuf)
 	GITFS_DBG("getattr:: %s %d", openpath, rev);
 
 	/* Get directories and latest files from underlying FS */
-	if (rev == -1) {
+	if (!rev) {
 		if (lstat(openpath, stbuf) < 0)
 			return -errno;
 		return 0;
@@ -65,7 +65,7 @@ static int gitfs_opendir(const char *path, struct fuse_file_info *fi)
 	DIR *dp;
 
 	GITFS_DBG("opendir:: %s", path);
-	build_xpath(xpath, path, -1);
+	build_xpath(xpath, path, 0);
 	dp = opendir(xpath);
 	if (!dp)
 		return -errno;
@@ -93,8 +93,8 @@ static int gitfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
 	/* Fill directories from backing FS */
 	do {
-		/* Hide the .loose directory, and enumerate only directories */
-		if (strcmp(de->d_name, ".loose") && de->d_type == DT_DIR) {
+		/* Hide the .git directory, and enumerate only directories */
+		if (strcmp(de->d_name, ".git") && de->d_type == DT_DIR) {
 			GITFS_DBG("readdir:: fs: %s", de->d_name);
 			if (filler(buf, de->d_name, NULL, 0))
 				return -ENOMEM;
@@ -142,7 +142,7 @@ static int gitfs_releasedir(const char *path, struct fuse_file_info *fi)
 static int gitfs_access(const char *path, int mask)
 {
 	GITFS_DBG("access:: %s", path);
-	build_xpath(xpath, path, -1);
+	build_xpath(xpath, path, 0);
 	if (access(xpath, mask) < 0)
 		return -errno;
 	return 0;
@@ -151,7 +151,7 @@ static int gitfs_access(const char *path, int mask)
 static int gitfs_symlink(const char *path, const char *link)
 {
 	GITFS_DBG("symlink:: %s to %s", link, path);
-	build_xpath(xpath, link, -1);
+	build_xpath(xpath, link, 0);
 	if (symlink(path, xpath) < 0)
 		return -errno;
 	return 0;
@@ -162,8 +162,8 @@ static int gitfs_rename(const char *path, const char *newpath)
 	char xnewpath[PATH_MAX];
 
 	GITFS_DBG("rename:: %s to %s", path, newpath);
-	build_xpath(xpath, path, -1);
-	build_xpath(xnewpath, newpath, -1);
+	build_xpath(xpath, path, 0);
+	build_xpath(xnewpath, newpath, 0);
 	if (rename(xpath, xnewpath) < 0)
 		return -errno;
 	return 0;
@@ -174,8 +174,8 @@ static int gitfs_link(const char *path, const char *newpath)
 	static char xnewpath[PATH_MAX];
 
 	GITFS_DBG("link:: %s to %s", path, newpath);
-	build_xpath(xpath, path, -1);
-	build_xpath(xnewpath, newpath, -1);
+	build_xpath(xpath, path, 0);
+	build_xpath(xnewpath, newpath, 0);
 	if (link(xpath, xnewpath) < 0)
 		return -errno;
 	return 0;
@@ -184,7 +184,7 @@ static int gitfs_link(const char *path, const char *newpath)
 static int gitfs_chmod(const char *path, mode_t mode)
 {
 	GITFS_DBG("chmod:: %s", path);
-	build_xpath(xpath, path, -1);
+	build_xpath(xpath, path, 0);
 	if (chmod(xpath, mode) < 0)
 		return -errno;
 	return 0;
@@ -199,7 +199,7 @@ static int gitfs_chown(const char *path, uid_t uid, gid_t gid)
 static int gitfs_truncate(const char *path, off_t newsize)
 {
 	GITFS_DBG("truncate:: %s to %lu", path, newsize);
-	build_xpath(xpath, path, -1);
+	build_xpath(xpath, path, 0);
 	if (truncate(xpath, newsize) < 0)
 		return -errno;
 	return 0;
@@ -208,7 +208,7 @@ static int gitfs_truncate(const char *path, off_t newsize)
 static int gitfs_utime(const char *path, struct utimbuf *ubuf)
 {
 	GITFS_DBG("utime:: %s", path);
-	build_xpath(xpath, path, -1);
+	build_xpath(xpath, path, 0);
 	if (utime(xpath, ubuf) < 0)
 		return -errno;
 	return 0;
@@ -216,14 +216,17 @@ static int gitfs_utime(const char *path, struct utimbuf *ubuf)
 
 static int gitfs_open(const char *path, struct fuse_file_info *fi)
 {
-	static char openpath[PATH_MAX];
+	int flags;
 	int rev;
 	int fd;
 
 	rev = parse_pathspec(xpath, path);
-	build_xpath(openpath, xpath, rev);
+	if (build_xpath(openpath, xpath, rev) < 0)
+		flags = fi->flags;
+	else
+		flags = (rev ? O_RDONLY : fi->flags);
 	GITFS_DBG("open:: %s %d", openpath, rev);
-	if ((fd = open(openpath, rev == -1 ? fi->flags : O_RDONLY)) < 0)
+	if ((fd = open(openpath, flags)) < 0)
 		return -errno;
 	fi->fh = fd;
 	return 0;
@@ -232,7 +235,7 @@ static int gitfs_open(const char *path, struct fuse_file_info *fi)
 static int gitfs_mknod(const char *path, mode_t mode, dev_t dev)
 {
 	GITFS_DBG("mknod:: %s", path);
-	build_xpath(xpath, path, -1);
+	build_xpath(xpath, path, 0);
 	if (mknod(xpath, mode, dev) < 0)
 		return -errno;
 	return 0;
@@ -250,7 +253,7 @@ static int gitfs_create(const char *path, mode_t mode,
 
 	/* Always pass through to underlying filesystem */
 	GITFS_DBG("create:: %s", path);
-	build_xpath(xpath, path, -1);
+	build_xpath(xpath, path, 0);
 	if ((fd = creat(xpath, mode)) < 0)
 		return -errno;
 	fi->fh = fd;
@@ -283,7 +286,7 @@ static int gitfs_write(const char *path, const char *buf, size_t size,
 static int gitfs_statfs(const char *path, struct statvfs *statv)
 {
 	GITFS_DBG("statfs:: %s", path);
-	build_xpath(xpath, path, -1);
+	build_xpath(xpath, path, 0);
 	if (statvfs(xpath, statv) < 0)
 		return -errno;
 	return 0;
@@ -296,15 +299,18 @@ static int gitfs_release(const char *path, struct fuse_file_info *fi)
 	unsigned char sha1[20];
 	char outfilename[40];
 	char outpath[PATH_MAX];
-	int ret;
+	int rev, ret;
 
 	GITFS_DBG("release:: %s", path);
 
-	/* Backup this revision before creating a new one */
-	build_xpath(xpath, path, -1);
-	if ((infile = fopen(xpath, "rb")) < 0)
-		return -errno;
-	if (stat(xpath, &st) < 0)
+	/* Don't recursively backup history */
+	if ((rev = parse_pathspec(xpath, path)))
+		goto END;
+
+	/* Attempt to create a backup */
+	build_xpath(xpath, path, 0);
+	if ((infile = fopen(xpath, "rb")) < 0 ||
+		(stat(xpath, &st) < 0))
 		return -errno;
 	if ((ret = sha1_file(infile, st.st_size, sha1)) < 0)
 		return ret;
@@ -312,8 +318,16 @@ static int gitfs_release(const char *path, struct fuse_file_info *fi)
 	strcpy(outpath, ROOTENV->metadir);
 	strcat(outpath, "/loose/");
 	strcat(outpath, outfilename);
-	if ((outfile = fopen(outpath, "wb")) < 0)
+	if (!access(outpath, F_OK)) {
+		/* SHA1 match; file unmodified */
+		GITFS_DBG("release:: unmodified: %s", path);
+		fclose(infile);
+		goto END;
+	}
+	if ((outfile = fopen(outpath, "wb")) < 0) {
+		fclose(infile);
 		return -errno;
+	}
 	rewind(infile);
 	buffer_copy_bytes(infile, outfile, st.st_size);
 	fflush(outfile);
@@ -326,7 +340,10 @@ static int gitfs_release(const char *path, struct fuse_file_info *fi)
 
 	/* Update the fstree */
 	fstree_insert_update_file(path);
-
+	return 0;
+END:
+	if (close(fi->fh) < 0)
+		return -errno;
 	return 0;
 }
 
@@ -345,7 +362,7 @@ static int gitfs_fsync(const char *path,
 static int gitfs_ftruncate(const char *path,
 			off_t offset, struct fuse_file_info *fi)
 {
-	build_xpath(xpath, path, -1);
+	build_xpath(xpath, path, 0);
 	if (ftruncate(fi->fh, offset) < 0)
 		return -errno;
 	return 0;
@@ -353,7 +370,7 @@ static int gitfs_ftruncate(const char *path,
 
 static int gitfs_readlink(const char *path, char *link, size_t size)
 {
-	build_xpath(xpath, path, -1);
+	build_xpath(xpath, path, 0);
 	if (readlink(path, link, size - 1) < 0)
 		return -errno;
 	return 0;
@@ -361,7 +378,7 @@ static int gitfs_readlink(const char *path, char *link, size_t size)
 
 static int gitfs_mkdir(const char *path, mode_t mode)
 {
-	build_xpath(xpath, path, -1);
+	build_xpath(xpath, path, 0);
 	if (mkdir(xpath, mode) < 0)
 		return -errno;
 	return 0;
@@ -369,7 +386,7 @@ static int gitfs_mkdir(const char *path, mode_t mode)
 
 static int gitfs_unlink(const char *path)
 {
-	build_xpath(xpath, path, -1);
+	build_xpath(xpath, path, 0);
 	if (unlink(xpath) < 0)
 		return -errno;
 	return 0;
@@ -377,7 +394,7 @@ static int gitfs_unlink(const char *path)
 
 static int gitfs_rmdir(const char *path)
 {
-	build_xpath(xpath, path, -1);
+	build_xpath(xpath, path, 0);
 	if (rmdir(xpath) < 0)
 		return -errno;
 	return 0;
