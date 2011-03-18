@@ -315,9 +315,7 @@ static int gitfs_release(const char *path, struct fuse_file_info *fi)
 	if ((ret = sha1_file(infile, st.st_size, sha1)) < 0)
 		return ret;
 	print_sha1(outfilename, sha1);
-	strcpy(outpath, ROOTENV->metadir);
-	strcat(outpath, "/loose/");
-	strcat(outpath, outfilename);
+	sprintf(outpath, "%s/.git/loose/%s", ROOTENV->fsback, outfilename);
 	if (!access(outpath, F_OK)) {
 		/* SHA1 match; file unmodified */
 		GITFS_DBG("release:: unmodified: %s", path);
@@ -431,69 +429,61 @@ static struct fuse_operations gitfs_oper = {
 	.utime = gitfs_utime,
 };
 
-static void preinit(const char *datapath, const char *mountpoint,
-		const char *fsback, const char *metadir,
-		struct env_t *rootenv)
-{
-	struct stat st;
-
-	if (!realpath(fsback, NULL))
-		die("Invalid fsback: %s", fsback);
-	if (!realpath(metadir, NULL))
-		die("Invalid metadir: %s", metadir);
-	if (!realpath(datapath, NULL))
-		die("Invalid datapath: %s", datapath);
-	if (!realpath(mountpoint, NULL))
-		die("Invalid mountpoint: %s", mountpoint);
-	rootenv->datapath = malloc(sizeof(realpath(datapath, NULL)));
-	rootenv->mountpoint = malloc(sizeof(realpath(mountpoint, NULL)));
-	rootenv->fsback = malloc(sizeof(realpath(fsback, NULL)));
-	rootenv->metadir = malloc(sizeof(realpath(metadir, NULL)));
-	strcpy(rootenv->fsback, realpath(fsback, NULL));
-	strcpy(rootenv->metadir, realpath(metadir, NULL));
-	strcpy(rootenv->datapath, realpath(datapath, NULL));
-	strcpy(rootenv->mountpoint, realpath(mountpoint, NULL));
-	rootenv->now = time(NULL);
-
-	/* Check that the datapath refers to a regular file */
-	if (stat(rootenv->datapath, &st) != 0 || !S_ISREG(st.st_mode))
-		die("%s is not a regular file", datapath);
-
-	GITFS_DBG("preinit:: datapath: %s, mountpoint: %s, fsback: %s",
-		rootenv->datapath, rootenv->mountpoint,	rootenv->fsback);
-}
-
-static int unlink_cb(const char *path, const struct stat *st,
-		int tflag, struct FTW *buf)
-{
-	if (remove(path) < 0)
-		return -errno;
-	return 0;
-}
-
-/* gitfs mount <packfile> <mountpoint> */
+/* gitfs mount <path> <mountpoint> */
+/* argv[2] is fsback and argv[3] is the mountpoint */
 int gitfs_fuse(int argc, char *argv[])
 {
-	int nargc = 4;
-	char **nargv = (char **) malloc(nargc * sizeof(char *));
-	char *fsback = "/tmp/gitfs_fsback";
-	char *metadir = "/tmp/gitfs_fsback/.git";
-	char *loosedir = "/tmp/gitfs_fsback/.git/loose";
-	mode_t dirmode = 0777;
-	struct env_t rootenv = {NULL, NULL, NULL, NULL, 0};
+	int nargc;
+	char **nargv;
+	struct stat st;
 
-	if (!access(fsback, F_OK))
-		/* rm -rf fsback */
-		if (nftw(fsback, unlink_cb, 64, FTW_DEPTH | FTW_PHYS) < 0)
-			die("Unable to remove %s", fsback);
-	if (mkdir(fsback, dirmode) < 0)
-		return -errno;
-	if (mkdir(metadir, dirmode) < 0)
-		return -errno;
-	if (mkdir(loosedir, dirmode) < 0)
-		return -errno;
+	nargc = 4;
+	nargv = (char **) malloc(nargc * sizeof(char *));
+	struct env_t rootenv;
 
-	preinit(argv[2], argv[3], fsback, metadir, &rootenv);
+	/* Sanitize fsback */
+	if (!realpath(argv[2], rootenv.fsback))
+		die("Invalid fsback: %s", argv[2]);
+
+	if ((lstat(rootenv.fsback, &st) < 0) ||
+		(access(rootenv.fsback, R_OK | W_OK | X_OK) < 0))
+		die("fsback doesn't have rwx permissions: %s",
+			rootenv.fsback);
+	if (!S_ISDIR(st.st_mode))
+		die("fsback not a directory: %s", rootenv.fsback);
+
+	/* Sanitize mountpoint */
+	if (!realpath(argv[3], rootenv.mountpoint))
+		die("Invalid mountpoint: %s", argv[3]);
+
+	if ((lstat(rootenv.mountpoint, &st) < 0) ||
+		(access(rootenv.mountpoint, R_OK | W_OK | X_OK) < 0))
+		die("mountpoint doesn't have rwx permissions: %s",
+			rootenv.mountpoint);
+	if (!S_ISDIR(st.st_mode))
+		die("mountpoint not a directory: %s", rootenv.mountpoint);
+
+	/* Check for .git directory */
+	sprintf(xpath, "%s/.git", rootenv.fsback);
+
+	if ((lstat(xpath, &st) < 0) ||
+		(access(xpath, R_OK | W_OK | X_OK) < 0))
+		die(".git doesn't have rwx permissions: %s", xpath);
+	if (!S_ISDIR(st.st_mode))
+		die(".git not a directory: %s", xpath);
+
+	/* Check for .git/loose directory */
+	sprintf(xpath, "%s/.git/loose", rootenv.fsback);
+
+	if ((lstat(xpath, &st) < 0) ||
+		(access(xpath, R_OK | W_OK | X_OK) < 0))
+		die(".git/loose doesn't have rwx permissions: %s", xpath);
+	if (!S_ISDIR(st.st_mode))
+		die(".git/loose not a directory: %s", xpath);
+
+	GITFS_DBG("gitfs_fuse:: fsback: %s, mountpoint: %s",
+		rootenv.fsback, rootenv.mountpoint);
+
 	nargv[0] = argv[0];
 	nargv[1] = "-d";
 	nargv[2] = "-odefault_permissions";

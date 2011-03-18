@@ -13,11 +13,8 @@
 #include <sys/stat.h>
 
 struct env_t {
-	char *datapath;
-	char *mountpoint;
-	char *fsback;
-	char *metadir;
-	time_t now;
+	char fsback[PATH_MAX];
+	char mountpoint[PATH_MAX];
 };
 
 int parse_pathspec(char *xpath, const char *path);

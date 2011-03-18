@@ -45,10 +45,8 @@ int build_xpath(char *xpath, const char *path, int rev)
 		strcpy(xpath, path);
 		return -1;
 	}
-	strcpy(xpath, ROOTENV->metadir);
-	strcat(xpath, "/loose/");
 	print_sha1(sha1_digest, fr->sha1);
-	strcat(xpath, sha1_digest);
+	sprintf(xpath, "%s/.git/loose/%s", ROOTENV->fsback, sha1_digest);
 	return 0;
 }
 
@@ -87,8 +85,6 @@ void fill_stat(struct stat *st, struct file_record *fr)
 		st->st_mode = S_IFREG | 0644;
 	}
 	st->st_nlink = 1;
-	/* st->st_uid = fuse_get_context()->uid; */
-	/* st->st_gid = fuse_get_context()->gid; */
 	st->st_mtime = fr->mtime;
 	st->st_size = fr->size;
 }
