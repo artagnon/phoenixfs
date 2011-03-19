@@ -292,6 +292,36 @@ FR:
 	insert_fr(vfr, new_fr);
 }
 
+void fstree_remove_file(const char *path)
+{
+	struct dir_record *dr;
+	struct vfile_record *vfr;
+	uint16_t key = ~0;
+	size_t length;
+	char *filename;
+	int rev;
+
+	filename = split_basename(path, dirname);
+	length = (size_t) strlen((char *) filename);
+	key = compute_crc32(key, (const unsigned char *) filename, length);
+
+	if (!(dr = find_dr(dirname))) {
+		GITFS_DBG("fstree_remove_file:: missing %s", dirname);
+		return;
+	}
+	if (!(vfr = find(dr->vroot, key, 0))) {
+		GITFS_DBG("fstree_remove_file:: missing %s", filename);
+		return;
+	}
+	for (rev = 0; ; rev++) {
+		if (!vfr->history[rev])
+			break;
+		free(vfr->history[rev]);
+	}
+	GITFS_DBG("fstree_remove_file:: %s", path);
+	delete(dr->vroot, key);
+}
+
 void print_fstree(void)
 {
 	node *n = NULL;

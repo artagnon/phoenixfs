@@ -382,6 +382,9 @@ static int gitfs_mkdir(const char *path, mode_t mode)
 
 static int gitfs_unlink(const char *path)
 {
+	/* Always pass through to underlying filesystem */
+	GITFS_DBG("unlink:: %s", path);
+	fstree_remove_file(path);
 	build_xpath(xpath, path, 0);
 	if (unlink(xpath) < 0)
 		return -errno;
@@ -390,6 +393,8 @@ static int gitfs_unlink(const char *path)
 
 static int gitfs_rmdir(const char *path)
 {
+	/* Always pass through to underlying filesystem */
+	GITFS_DBG("rmdir:: %s", path);
 	build_xpath(xpath, path, 0);
 	if (rmdir(xpath) < 0)
 		return -errno;
