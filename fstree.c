@@ -111,25 +111,25 @@ void fill_fr(struct file_record *fr, struct stat *st)
 
 struct dir_record *find_dr(const char *path)
 {
+	struct dir_record *dr;
 	uint16_t key = ~0;
-	void *record;
 	size_t length;
 
 	length = (size_t) strlen((char *) path);
 	key = compute_crc32(key, (const unsigned char *) path, length);
-	if (!(record = find(fsroot, key, 0))) {
-		GITFS_DBG("find_dr:: not found %s", path);
+	if (!(dr = find(fsroot, key, 0))) {
+		GITFS_DBG("find_dr:: missing %s", path);
 		return NULL;
 	}
 	GITFS_DBG("find_dr:: found %s", path);
-	return ((struct dir_record *) record);
+	return dr;
 }
 
 struct vfile_record *find_vfr(const char *path)
 {
 	uint16_t key = ~0;
 	struct dir_record *dr;
-	void *record;
+	struct vfile_record *vfr;
 	char *filename;
 	size_t length;
 
@@ -140,18 +140,18 @@ struct vfile_record *find_vfr(const char *path)
 	}
 	length = (size_t) strlen((char *) filename);
 	key = compute_crc32(key, (const unsigned char *) filename, length);
-	if (!(record = find(dr->vroot, key, 0))) {
+	if (!(vfr = find(dr->vroot, key, 0))) {
 		GITFS_DBG("find_vfr:: not found %s", path);
 		return NULL;
 	}
 	GITFS_DBG("find_vfr:: found %s", path);
-	return ((struct vfile_record *) record);
+	return vfr;
 }
 
 struct file_record *find_fr(const char *path, int rev)
 {
 	struct vfile_record *vfr;
-	struct file_record *record;
+	struct file_record *fr;
 
 	if (!(vfr = find_vfr(path))) {
 		GITFS_DBG("find_fr:: not found %s", path);
@@ -159,12 +159,12 @@ struct file_record *find_fr(const char *path, int rev)
 	}
 	/* Translate rev to mean "number of revs before HEAD" */
 	rev = (vfr->HEAD - rev) % REV_TRUNCATE;
-	if (!(record = vfr->history[rev])) {
+	if (!(fr = vfr->history[rev])) {
 		GITFS_DBG("find_fr:: not found %s", path);
 		return NULL;
 	}
 	GITFS_DBG("find_fr:: found %s", path);
-	return record;
+	return fr;
 }
 
 void insert_dr(struct dir_record *dr)
@@ -239,8 +239,10 @@ struct file_record *make_fr(const char *path)
 	build_xpath(xpath, path, 0);
 	if (!(infile = fopen(xpath, "rb")) ||
 		(stat(xpath, &st) < 0) ||
-		(sha1_file(infile, st.st_size, sha1) < 0))
+		(sha1_file(infile, st.st_size, sha1) < 0)) {
+		free(fr);
 		return NULL;
+	}
 	fclose(infile);
 	memcpy(fr->sha1, sha1, 20);
 	fill_fr(fr, &st);
