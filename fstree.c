@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 
 static struct node *fsroot = NULL;
+static char dirname[PATH_MAX] = "\0";
 
 /* Pathspec: <path>[@<rev>] */
 int parse_pathspec(char *xpath, const char *path)
@@ -128,8 +129,8 @@ struct vfile_record *find_vfr(const char *path)
 {
 	uint16_t key = ~0;
 	struct dir_record *dr;
-	char dirname[PATH_MAX], *filename;
 	void *record;
+	char *filename;
 	size_t length;
 
 	filename = split_basename(path, dirname);
@@ -248,17 +249,24 @@ void fstree_insert_update_file(const char *path)
 {
 	struct dir_record *dr;
 	struct vfile_record *vfr;
-	struct file_record *fr;
-	char dirname[PATH_MAX], *filename = NULL;
+	struct file_record *fr, *new_fr;
+	uint16_t key = ~0;
+	char *filename;
+	size_t length;
 
 	filename = split_basename(path, dirname);
 	if (!(dr = find_dr(dirname)))
 		goto DR;
 	else {
-		if (!(vfr = find_vfr(path)))
+		length = (size_t) strlen((char *) filename);
+		key = compute_crc32(key, (const unsigned char *) filename, length);
+		if (!(vfr = find(dr->vroot, key, 0))) {
+			GITFS_DBG("fstree_insert_update_file:: missing vfr: %s", filename);
 			goto VFR;
+		}
 		else {
-			fr = find_fr(path, 0);
+			if (vfr->HEAD >= 0)
+				fr = vfr->history[vfr->HEAD];
 			goto FR;
 		}
 	}
@@ -269,8 +277,15 @@ VFR:
 	vfr = make_vfr(filename);
 	insert_vfr(dr, vfr);
 FR:
-	fr = make_fr(path);
-	insert_fr(vfr, fr);
+	new_fr = make_fr(path);
+
+	/* If content is present in the old fr, don't make a new fr */
+	if (fr && !memcmp(fr->sha1, new_fr->sha1, 20)) {
+		GITFS_DBG("fstree_insert_update_file:: unmodified: %s", path);
+		free(new_fr);
+		return;
+	}
+	insert_fr(vfr, new_fr);
 }
 
 void print_fstree(void)

@@ -299,11 +299,11 @@ static int gitfs_release(const char *path, struct fuse_file_info *fi)
 	char outpath[PATH_MAX];
 	int rev, ret;
 
-	GITFS_DBG("release:: %s", path);
-
 	/* Don't recursively backup history */
-	if ((rev = parse_pathspec(xpath, path)))
+	if ((rev = parse_pathspec(xpath, path))) {
+		GITFS_DBG("release:: history: %s", path);
 		goto END;
+	}
 
 	/* Attempt to create a backup */
 	build_xpath(xpath, path, 0);
@@ -315,9 +315,9 @@ static int gitfs_release(const char *path, struct fuse_file_info *fi)
 	print_sha1(outfilename, sha1);
 	sprintf(outpath, "%s/.git/loose/%s", ROOTENV->fsback, outfilename);
 	if (!access(outpath, F_OK)) {
-		/* SHA1 match; file unmodified */
-		GITFS_DBG("release:: unmodified: %s", path);
+		/* SHA1 match; don't overwrite file as an optimization */
 		fclose(infile);
+		fstree_insert_update_file(path);
 		goto END;
 	}
 	if ((outfile = fopen(outpath, "wb")) < 0) {
