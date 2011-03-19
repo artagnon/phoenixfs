@@ -219,6 +219,8 @@ struct vfile_record *make_vfr(const char *name)
 	if (!(vfr = malloc(sizeof(struct vfile_record))))
 		return NULL;
 	memcpy(vfr->name, name, strlen(name));
+	memset(vfr->history, 0,
+		REV_TRUNCATE * sizeof(struct file_record *));
 	vfr->HEAD = -1;
 	return vfr;
 }
