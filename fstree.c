@@ -322,6 +322,16 @@ void fstree_remove_file(const char *path)
 	delete(dr->vroot, key);
 }
 
+void fstree_dump_tree(FILE *outfile)
+{
+	dump_dr_tree(fsroot, outfile);
+}
+
+void fstree_load_tree(FILE *infile)
+{
+	fsroot = load_dr_tree(infile);
+}
+
 void print_fstree(void)
 {
 	node *n = NULL;

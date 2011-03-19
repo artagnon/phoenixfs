@@ -17,6 +17,7 @@ BUILTIN_OBJS += diff.o
 BUILTIN_OBJS += btree.o
 BUILTIN_OBJS += crc32.o
 BUILTIN_OBJS += fstree.o
+BUILTIN_OBJS += persist.o
 
 ALL_TARGETS =
 ALL_TARGETS += gitfs

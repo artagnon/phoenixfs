@@ -316,6 +316,7 @@ static int gitfs_release(const char *path, struct fuse_file_info *fi)
 	sprintf(outpath, "%s/.git/loose/%s", ROOTENV->fsback, outfilename);
 	if (!access(outpath, F_OK)) {
 		/* SHA1 match; don't overwrite file as an optimization */
+		GITFS_DBG("release:: not overwriting: %s", outpath);
 		fclose(infile);
 		fstree_insert_update_file(path);
 		goto END;
@@ -401,6 +402,20 @@ static int gitfs_rmdir(const char *path)
 	return 0;
 }
 
+static void gitfs_destroy(void *userdata)
+{
+	FILE *outfile;
+
+	/* Persist the fstree */
+	sprintf(xpath, "%s/.git/HEAD", ROOTENV->fsback);
+	if (!(outfile = fopen(xpath, "wb"))) {
+		GITFS_DBG("destroy:: Can't open .git/HEAD to persist");
+		return;
+	}
+	GITFS_DBG("destroy:: dumping fstree");
+	fstree_dump_tree(outfile);
+}
+
 static struct fuse_operations gitfs_oper = {
 	.init = gitfs_init,
 	.getattr = gitfs_getattr,
@@ -430,6 +445,7 @@ static struct fuse_operations gitfs_oper = {
 	.rename = gitfs_rename,
 	.truncate = gitfs_truncate,
 	.utime = gitfs_utime,
+	.destroy = gitfs_destroy,
 };
 
 /* gitfs mount <path> <mountpoint> */
@@ -438,6 +454,7 @@ int gitfs_fuse(int argc, char *argv[])
 {
 	int nargc;
 	char **nargv;
+	FILE *infile;
 	struct stat st;
 
 	nargc = 4;
@@ -486,6 +503,14 @@ int gitfs_fuse(int argc, char *argv[])
 
 	GITFS_DBG("gitfs_fuse:: fsback: %s, mountpoint: %s",
 		rootenv.fsback, rootenv.mountpoint);
+
+	/* Check for .git/HEAD to load tree */
+	sprintf(xpath, "%s/.git/HEAD", rootenv.fsback);
+	if (!access(xpath, F_OK) &&
+		(infile = fopen(xpath, "rb"))) {
+		GITFS_DBG("gitfs_fuse:: loading fstree");
+		fstree_load_tree(infile);
+	}
 
 	nargv[0] = argv[0];
 	nargv[1] = "-d";

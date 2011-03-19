@@ -9,6 +9,7 @@
 #include "btree.h"
 #include "crc32.h"
 #include "sha1.h"
+#include "persist.h"
 
 #include <sys/stat.h>
 
@@ -25,6 +26,8 @@ struct vfile_record *find_vfr(const char *path);
 struct file_record *find_fr(const char *path, int rev);
 void fstree_insert_update_file(const char *path);
 void fstree_remove_file(const char *path);
+void fstree_dump_tree(FILE *outfile);
+void fstree_load_tree(FILE *infile);
 void print_fstree(void);
 
 #define ROOTENV ((struct env_t *) fuse_get_context()->private_data)

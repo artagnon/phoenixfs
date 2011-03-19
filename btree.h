@@ -50,13 +50,13 @@ typedef struct node {
 	uint16_t *keys;
 	struct node *parent;
 	bool is_leaf;
-	int num_keys;
+	uint16_t num_keys;
 	struct node *next; // Used for queue.
 } node;
 
 struct file_record {
-	enum mode_t mode;
 	unsigned char sha1[20];
+	enum mode_t mode;
 	size_t size;
 	time_t mtime;
 };
@@ -64,7 +64,7 @@ struct file_record {
 struct vfile_record {
 	unsigned char name[PATH_MAX];
 	struct file_record *history[REV_TRUNCATE];
-	int HEAD;
+	int8_t HEAD;
 };
 
 struct dir_record {
