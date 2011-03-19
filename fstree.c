@@ -56,12 +56,14 @@ char *split_basename(const char *path, char *dirname)
 	int length;
 	char *filename;
 
-	filename = strrchr(path, '/');
-	length = strlen(path) - strlen(filename);
-	/* Empty path is represented by '/' */
-	length = (length ? length + 1 : 2);
+	/* In the worst case, strrchr returns 0: leading '/' */
+	filename = strrchr(path, '/') + 1;
+
+	/* +1 to accomodate the null terminator */
+	length = strlen(path) - strlen(filename) + 1;
 	memcpy(dirname, path, length - 1);
 	dirname[length - 1] = '\0';
+
 	GITFS_DBG("split_basename:: path: %s, dirname: %s, filename: %s",
 		path, dirname, filename);
 	return filename;

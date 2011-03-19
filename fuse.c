@@ -84,7 +84,6 @@ static int gitfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	struct vfile_record *vfr;
 	struct dir_record *dr;
 	register int i;
-	unsigned char *name;
 
 	dp = (DIR *) (uintptr_t) fi->fh;
 
@@ -119,9 +118,8 @@ static int gitfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 				GITFS_DBG("readdir:: key listing issue");
 			vfr = (struct vfile_record *) record;
 			fill_stat(&st, vfr->history[vfr->HEAD]);
-			name = vfr->name + 1; /* Strip leading slash */
-			GITFS_DBG("readdir:: tree fill: %s", (const char *) name);
-			if (filler(buf, (const char *) name, &st, 0))
+			GITFS_DBG("readdir:: tree fill: %s", (const char *) vfr->name);
+			if (filler(buf, (const char *) vfr->name, &st, 0))
 				return -ENOMEM;
 		}
 		if (iter->pointers[BTREE_ORDER - 1] != NULL)
