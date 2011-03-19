@@ -12,6 +12,7 @@ BUILD_OBJS += test-sha1.o
 BUILD_OBJS += test-btree.o
 BUILD_OBJS += test-crc32.o
 BUILD_OBJS += test-compress.o
+BUILD_OBJS += test-delta.o
 
 ALL_TARGETS =
 ALL_TARGETS += test-pack
@@ -20,6 +21,7 @@ ALL_TARGETS += test-sha1
 ALL_TARGETS += test-btree
 ALL_TARGETS += test-crc32
 ALL_TARGETS += test-compress
+ALL_TARGETS += test-delta
 
 CFLAGS = -g -O2 -Wall $(shell pkg-config fuse --cflags) $(shell pkg-config zlib --cflags)
 LDFLAGS = $(shell pkg-config fuse --libs) $(shell pkg-config zlib --libs)
@@ -74,17 +76,22 @@ test-sha1$X: test-sha1.o ../sha1.o ../common.o $(SHA1_LIB)
 test-btree$X: test-btree.o ../btree.o ../common.o
 	$(QUIET_LINK)$(CC) -I../ $(ALL_CFLAGS) -o $@ test-btree.o \
 		../btree.o ../common.o \
-		$(ALL_LDFLAGS) $(SHA1_LIB)
+		$(ALL_LDFLAGS)
 
 test-crc32$X: test-crc32.o ../crc32.o ../common.o
 	$(QUIET_LINK)$(CC) -I../ $(ALL_CFLAGS) -o $@ test-crc32.o \
 		../crc32.o ../common.o \
-		$(ALL_LDFLAGS) $(SHA1_LIB)
+		$(ALL_LDFLAGS)
 
 test-compress$X: test-compress.o ../compress.o ../common.o
 	$(QUIET_LINK)$(CC) -I../ $(ALL_CFLAGS) -o $@ test-compress.o \
 		../compress.o ../common.o \
-		$(ALL_LDFLAGS) $(SHA1_LIB)
+		$(ALL_LDFLAGS)
+
+test-delta$X: test-delta.o ../delta.o ../common.o
+	$(QUIET_LINK)$(CC) -I../ $(ALL_CFLAGS) -o $@ test-delta.o \
+		../delta.o ../common.o \
+		$(ALL_LDFLAGS)
 
 $(XDIFF_LIB): $(XDIFF_OBJS)
 	$(QUIET_AR)$(RM) $@ && $(AR) rcs $@ $(XDIFF_OBJS)

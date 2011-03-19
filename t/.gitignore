@@ -4,3 +4,4 @@ test-sha1
 test-btree
 test-crc32
 test-compress
+test-delta
