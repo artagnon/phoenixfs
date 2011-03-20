@@ -17,6 +17,7 @@
 #include "buffer.h"
 #include "btree.h"
 #include "fstree.h"
+#include "compress.h"
 
 int gitfs_fuse(int argc, char *argv[]);
 

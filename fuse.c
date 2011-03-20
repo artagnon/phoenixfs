@@ -214,17 +214,31 @@ static int gitfs_utime(const char *path, struct utimbuf *ubuf)
 
 static int gitfs_open(const char *path, struct fuse_file_info *fi)
 {
-	int flags;
-	int rev;
-	int fd;
+	int rev, fd;
+	FILE *infile, *fsfile;
+	char fspath[PATH_MAX];
+	struct file_record *fr;
+	char sha1_digest[40];
 
 	rev = parse_pathspec(xpath, path);
-	if (build_xpath(openpath, xpath, rev) < 0)
-		flags = fi->flags;
-	else
-		flags = (rev ? O_RDONLY : fi->flags);
+	build_xpath(fspath, xpath, 0);
+
+	/* Build openpath by hand */
+	if (!(fr = find_fr(xpath, rev)))
+		strcpy(openpath, xpath);
+	print_sha1(sha1_digest, fr->sha1);
+	sprintf(openpath, "%s/.git/loose/%s", ROOTENV->fsback, sha1_digest);
+
+	/* zinflate openpath onto fspath */
 	GITFS_DBG("open:: %s %d", openpath, rev);
-	if ((fd = open(openpath, flags)) < 0)
+	if (!(infile = fopen(openpath, "rb")) ||
+		(fsfile = fopen(fspath, "wb")) < 0)
+		return -errno;
+	zinflate(infile, fsfile);
+	fclose(infile);
+	fclose(fsfile);
+
+	if ((fd = open(fspath, fi->flags)) < 0)
 		return -errno;
 	fi->fh = fd;
 	return 0;
@@ -326,8 +340,7 @@ static int gitfs_release(const char *path, struct fuse_file_info *fi)
 		return -errno;
 	}
 	rewind(infile);
-	buffer_copy_bytes(infile, outfile, st.st_size);
-	fflush(outfile);
+	zdeflate(infile, outfile, -1);
 	fclose(infile);
 	fclose(outfile);
 	GITFS_DBG("release:: backup: %s", outpath);
