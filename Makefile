@@ -19,6 +19,7 @@ BUILTIN_OBJS += crc32.o
 BUILTIN_OBJS += fstree.o
 BUILTIN_OBJS += persist.o
 BUILTIN_OBJS += delta.o
+BUILTIN_OBJS += loose.o
 
 ALL_TARGETS =
 ALL_TARGETS += gitfs
