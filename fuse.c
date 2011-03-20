@@ -223,9 +223,10 @@ static int gitfs_open(const char *path, struct fuse_file_info *fi)
 	rev = parse_pathspec(xpath, path);
 	build_xpath(fspath, xpath, 0);
 
-	/* Build openpath by hand */
 	if (!(fr = find_fr(xpath, rev)))
-		strcpy(openpath, xpath);
+		goto END;
+
+	/* Build openpath by hand */
 	print_sha1(sha1_digest, fr->sha1);
 	sprintf(openpath, "%s/.git/loose/%s", ROOTENV->fsback, sha1_digest);
 
@@ -237,7 +238,7 @@ static int gitfs_open(const char *path, struct fuse_file_info *fi)
 	zinflate(infile, fsfile);
 	fclose(infile);
 	fclose(fsfile);
-
+END:
 	if ((fd = open(fspath, fi->flags)) < 0)
 		return -errno;
 	fi->fh = fd;
