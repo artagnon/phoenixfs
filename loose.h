@@ -22,7 +22,8 @@ struct loose_buf {
 };
 
 void add_loose_entry(unsigned char *sha1, size_t size);
-void packup_loose_objects(FILE *packfh, const char *loosedir);
+void packup_loose_objects(FILE *packfh, const void *idx_data,
+			uint32_t idx_nr, const char *loosedir);
 void unmap_write_idx(struct pack_idx_entry *objects[], int nr_objects);
 
 #endif

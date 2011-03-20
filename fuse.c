@@ -229,6 +229,12 @@ static int gitfs_open(const char *path, struct fuse_file_info *fi)
 	/* Build openpath by hand */
 	print_sha1(sha1_digest, fr->sha1);
 	sprintf(openpath, "%s/.git/loose/%s", ROOTENV->fsback, sha1_digest);
+	if (access(openpath, F_OK) < 0) {
+		/* Try extracting from packfile */
+		sprintf(xpath, "%s/.git/loose", ROOTENV->fsback);
+		if (unpack_entry(fr->sha1, xpath) < 0)
+			return -ENOENT;
+	}
 
 	/* zinflate openpath onto fspath */
 	GITFS_DBG("open:: %s %d", openpath, rev);
@@ -341,10 +347,11 @@ static int gitfs_release(const char *path, struct fuse_file_info *fi)
 		return -errno;
 	}
 	rewind(infile);
+	GITFS_DBG("release:: backup: %s", outpath);
 	zdeflate(infile, outfile, -1);
+	mark_for_packing(sha1, st.st_size);
 	fclose(infile);
 	fclose(outfile);
-	GITFS_DBG("release:: backup: %s", outpath);
 
 	if (close(fi->fh) < 0)
 		return -errno;
@@ -428,6 +435,9 @@ static void gitfs_destroy(void *userdata)
 	}
 	GITFS_DBG("destroy:: dumping fstree");
 	fstree_dump_tree(outfile);
+	GITFS_DBG("destroy:: packing loose objects");
+	sprintf(xpath, "%s/.git/loose", ROOTENV->fsback);
+	dump_packing_info(xpath);
 }
 
 static struct fuse_operations gitfs_oper = {
@@ -524,6 +534,19 @@ int gitfs_fuse(int argc, char *argv[])
 		(infile = fopen(xpath, "rb"))) {
 		GITFS_DBG("gitfs_fuse:: loading fstree");
 		fstree_load_tree(infile);
+	}
+
+	/* Check for .git/master.pack and .git/master.idx */
+	sprintf(xpath, "%s/.git/master.pack", rootenv.fsback);
+	sprintf(openpath, "%s/.git/master.idx", rootenv.fsback);
+	if ((access(xpath, F_OK) < 0) ||
+		(access(openpath, F_OK) < 0)) {
+		GITFS_DBG("gitfs_fuse:: not loading packing info");
+		load_packing_info(xpath, openpath, false);
+	}
+	else {
+		GITFS_DBG("gitfs_fuse:: loading packing info");
+		load_packing_info(xpath, openpath, 1);
 	}
 
 	nargv[0] = argv[0];

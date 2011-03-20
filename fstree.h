@@ -10,6 +10,7 @@
 #include "crc32.h"
 #include "sha1.h"
 #include "persist.h"
+#include "pack.h"
 
 #include <sys/stat.h>
 

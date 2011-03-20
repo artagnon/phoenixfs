@@ -8,6 +8,8 @@
 #define pack_idx_off32_limit 0x7fffffff
 
 #include "common.h"
+#include "buffer.h"
+#include "sha1.h"
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -51,8 +53,10 @@ int load_packing_info(const char *pack_path, const char *idx_path,
 void dump_packing_info(const char *loosedir);
 int map_pack_idx(FILE *src);
 void unmap_write_idx(struct pack_idx_entry *objects[], int nr_objects);
-void packup_loose_objects(FILE *packfh, const char *loosedir);
+void packup_loose_objects(FILE *packfh, const void *idx_data,
+			uint32_t idx_nr, const char *loosedir);
 void mark_for_packing(unsigned char *sha1, size_t size);
 void add_loose_entry(unsigned char *sha1, size_t size);
+int unpack_entry(unsigned char *sha1, const char *loosedir);
 
 #endif

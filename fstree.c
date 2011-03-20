@@ -48,6 +48,12 @@ int build_xpath(char *xpath, const char *path, int rev)
 	}
 	print_sha1(sha1_digest, fr->sha1);
 	sprintf(xpath, "%s/.git/loose/%s", ROOTENV->fsback, sha1_digest);
+	if (access(xpath, F_OK) < 0) {
+		/* Try extracting from packfile */
+		sprintf(xpath, "%s/.git/loose", ROOTENV->fsback);
+		if (unpack_entry(fr->sha1, xpath) < 0)
+			return -1;
+	}
 	return 0;
 }
 
