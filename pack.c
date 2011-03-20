@@ -224,7 +224,7 @@ int map_pack_idx(FILE *src)
 		return -errno;
 	fstat(srcfd, &st);
 	idx_size = st.st_size;
-	if (idx_size < 4 * 256 + 20 + 20) {
+	if (idx_size < 4 * 256) {
 		close(srcfd);
 		die("Pack index too small");
 	}

@@ -24,7 +24,7 @@ void add_loose_entry(unsigned char *sha1, size_t size)
 	this_nr = looseroot.nr;
 	print_sha1(sha1_digest, sha1);
 	GITFS_DBG("add_loose_entry:: %s [%d]", sha1_digest, this_nr);
-	looseroot.entries[this_nr] = malloc(sizeof(struct loose_buf));
+	looseroot.entries[this_nr] = malloc(sizeof(struct pack_idx_entry));
 	memcpy(looseroot.entries[this_nr]->sha1, sha1, 20);
 	looseroot.entries[this_nr]->size = size;
 	looseroot.nr ++;
@@ -57,7 +57,7 @@ void packup_loose_objects(FILE *packfh, const void *idx_data,
 		/* Set the offset for writing packfile index */
 		this_entry->offset = ftell(packfh);
 		/* Write the SHA1 */
-		fwrite(this_entry->sha1, 20 * sizeof(unsigned char), 1, packfh);
+		fwrite(this_entry->sha1, 20, 1, packfh);
 		/* Write delta bit */
 		/* TODO: Generate real deltas! */
 		fwrite(&delta, sizeof(bool), 1, packfh);
@@ -84,11 +84,11 @@ void packup_loose_objects(FILE *packfh, const void *idx_data,
 	/* Skip header and fanout table */
 	sha1_offset = (void *) (idx_data + 8 + 256 * 4);
 	for (i = 0; i < idx_nr; i++) {
-		memcpy(&this_sha1, sha1_offset, 20 * sizeof(unsigned char));
+		memcpy(&this_sha1, sha1_offset, 20);
 		add_loose_entry(this_sha1, 0);
 		sha1_offset += 20 * sizeof(unsigned char);
 	}
 
 	/* Finally, rewrite the idx */
-	unmap_write_idx(looseroot.entries, looseroot.nr + idx_nr);
+	unmap_write_idx(looseroot.entries, looseroot.nr);
 }
