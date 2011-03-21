@@ -226,7 +226,7 @@ struct dir_record *make_dr(const char *path)
 	GITFS_DBG("make_dr:: %s", path);
 	if (!(dr = malloc(sizeof(struct dir_record))))
 		return NULL;
-	memcpy(dr->name, path, strlen(path));
+	memcpy(dr->name, path, strlen(path) + 1);
 	dr->vroot = NULL;
 	return dr;
 }
@@ -238,7 +238,7 @@ struct vfile_record *make_vfr(const char *name)
 	GITFS_DBG("make_vfr:: %s", name);
 	if (!(vfr = malloc(sizeof(struct vfile_record))))
 		return NULL;
-	memcpy(vfr->name, name, strlen(name));
+	memcpy(vfr->name, name, strlen(name) + 1);
 	memset(vfr->history, 0,
 		REV_TRUNCATE * sizeof(struct file_record *));
 	vfr->HEAD = -1;
