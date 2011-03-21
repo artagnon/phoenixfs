@@ -240,7 +240,7 @@ struct vfile_record *make_vfr(const char *name)
 	return vfr;
 }
 
-struct file_record *make_fr(const char *path)
+struct file_record *make_fr(const char *path, const char *follow)
 {
 	struct file_record *fr;
 	unsigned char sha1[20];
@@ -252,19 +252,36 @@ struct file_record *make_fr(const char *path)
 	if (!(fr = malloc(sizeof(struct file_record))))
 		return NULL;
 	build_xpath(xpath, path, 0);
+
+	if (lstat(xpath, &st) < 0) {
+		GITFS_DBG("make_fr:: can't stat %s", xpath);
+		free(fr);
+		return NULL;
+	}
+
+	/* No point computing SHA1 of symlinks */
+	if (S_ISLNK(st.st_mode)) {
+		GITFS_DBG("make_fr:: link %s to %s", path, follow);
+		memset(fr->sha1, 0, 20);
+		strcpy((char *) fr->follow, follow);
+		goto END;
+	}
+
+	/* Compute SHA1 of regular and executable files */
 	if (!(infile = fopen(xpath, "rb")) ||
-		(stat(xpath, &st) < 0) ||
 		(sha1_file(infile, st.st_size, sha1) < 0)) {
 		free(fr);
 		return NULL;
 	}
 	fclose(infile);
 	memcpy(fr->sha1, sha1, 20);
+	strcpy((char *) fr->follow, "\0");
+END:
 	fill_fr(fr, &st);
 	return fr;
 }
 
-void fstree_insert_update_file(const char *path)
+void fstree_insert_update_file(const char *path, const char *follow)
 {
 	struct dir_record *dr;
 	struct vfile_record *vfr;
@@ -286,6 +303,8 @@ void fstree_insert_update_file(const char *path)
 		else {
 			if (vfr->HEAD >= 0)
 				fr = vfr->history[vfr->HEAD];
+			else
+				fr = NULL;
 			goto FR;
 		}
 	}
@@ -296,7 +315,10 @@ VFR:
 	vfr = make_vfr(filename);
 	insert_vfr(dr, vfr);
 FR:
-	new_fr = make_fr(path);
+	if (!(new_fr = make_fr(path, follow))) {
+		GITFS_DBG("fstree_insert_update_file:: Can't make fr %s", path);
+		return;
+	}
 
 	/* If content is present in the old fr, don't make a new fr */
 	if (fr && !memcmp(fr->sha1, new_fr->sha1, 20)) {

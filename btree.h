@@ -56,6 +56,7 @@ typedef struct node {
 
 struct file_record {
 	unsigned char sha1[20];
+	unsigned char follow[PATH_MAX];
 	enum mode_t mode;
 	size_t size;
 	time_t mtime;

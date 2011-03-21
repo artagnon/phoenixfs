@@ -339,7 +339,7 @@ static int gitfs_release(const char *path, struct fuse_file_info *fi)
 		/* SHA1 match; don't overwrite file as an optimization */
 		GITFS_DBG("release:: not overwriting: %s", outpath);
 		fclose(infile);
-		fstree_insert_update_file(path);
+		fstree_insert_update_file(path, NULL);
 		goto END;
 	}
 	if ((outfile = fopen(outpath, "wb")) < 0) {
@@ -357,7 +357,7 @@ static int gitfs_release(const char *path, struct fuse_file_info *fi)
 		return -errno;
 
 	/* Update the fstree */
-	fstree_insert_update_file(path);
+	fstree_insert_update_file(path, NULL);
 	return 0;
 END:
 	if (close(fi->fh) < 0)

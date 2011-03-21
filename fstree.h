@@ -25,7 +25,7 @@ void fill_stat(struct stat *st, struct file_record *fr);
 struct dir_record *find_dr(const char *path);
 struct vfile_record *find_vfr(const char *path);
 struct file_record *find_fr(const char *path, int rev);
-void fstree_insert_update_file(const char *path);
+void fstree_insert_update_file(const char *path, const char *follow);
 void fstree_remove_file(const char *path);
 void fstree_dump_tree(FILE *outfile);
 void fstree_load_tree(FILE *infile);
