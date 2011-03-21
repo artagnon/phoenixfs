@@ -223,7 +223,8 @@ static int gitfs_open(const char *path, struct fuse_file_info *fi)
 	rev = parse_pathspec(xpath, path);
 	build_xpath(fspath, xpath, 0);
 
-	if (!(fr = find_fr(xpath, rev)))
+	/* Skip zinflate for latest revision and entries not in fstree */
+	if (!rev || !(fr = find_fr(xpath, rev)))
 		goto END;
 
 	/* Build openpath by hand */
@@ -232,16 +233,20 @@ static int gitfs_open(const char *path, struct fuse_file_info *fi)
 	if (access(openpath, F_OK) < 0) {
 		/* Try extracting from packfile */
 		sprintf(xpath, "%s/.git/loose", ROOTENV->fsback);
+		GITFS_DBG("open:: pack %s", sha1_digest);
 		if (unpack_entry(fr->sha1, xpath) < 0)
 			return -ENOENT;
 	}
+	else
+		GITFS_DBG("open:: loose %s", sha1_digest);
 
 	/* zinflate openpath onto fspath */
-	GITFS_DBG("open:: %s %d", openpath, rev);
+	GITFS_DBG("open:: zinflate %s onto %s", openpath, fspath);
 	if (!(infile = fopen(openpath, "rb")) ||
-		(fsfile = fopen(fspath, "wb")) < 0)
+		(fsfile = fopen(fspath, "wb+")) < 0)
 		return -errno;
-	zinflate(infile, fsfile);
+	if (zinflate(infile, fsfile) != Z_OK)
+		GITFS_DBG("open:: zinflate issue");
 	fclose(infile);
 	fclose(fsfile);
 END:
@@ -323,13 +328,17 @@ static int gitfs_release(const char *path, struct fuse_file_info *fi)
 	/* Don't recursively backup history */
 	if ((rev = parse_pathspec(xpath, path))) {
 		GITFS_DBG("release:: history: %s", path);
-		goto END;
+		if (close(fi->fh) < 0) {
+			GITFS_DBG("release:: can't really close");
+			return -errno;
+		}
+		return 0;
 	}
 
 	/* Attempt to create a backup */
 	build_xpath(xpath, path, 0);
 	if ((infile = fopen(xpath, "rb")) < 0 ||
-		(stat(xpath, &st) < 0))
+		(lstat(xpath, &st) < 0))
 		return -errno;
 	if ((ret = sha1_file(infile, st.st_size, sha1)) < 0)
 		return ret;
@@ -338,30 +347,29 @@ static int gitfs_release(const char *path, struct fuse_file_info *fi)
 	if (!access(outpath, F_OK)) {
 		/* SHA1 match; don't overwrite file as an optimization */
 		GITFS_DBG("release:: not overwriting: %s", outpath);
-		fclose(infile);
-		fstree_insert_update_file(path, NULL);
 		goto END;
 	}
 	if ((outfile = fopen(outpath, "wb")) < 0) {
 		fclose(infile);
 		return -errno;
 	}
-	rewind(infile);
-	GITFS_DBG("release:: backup: %s", outpath);
-	zdeflate(infile, outfile, -1);
-	mark_for_packing(sha1, st.st_size);
-	fclose(infile);
-	fclose(outfile);
 
-	if (close(fi->fh) < 0)
+	/* Rewind and seek back */
+	rewind(infile);
+	GITFS_DBG("release:: zdeflate %s onto %s", xpath, outfilename);
+	if (zdeflate(infile, outfile, -1) != Z_OK)
+		GITFS_DBG("release:: zdeflate issue");
+	mark_for_packing(sha1, st.st_size);
+	fseek(infile, 0L, SEEK_END);
+	fclose(outfile);
+END:
+	if (close(fi->fh) < 0) {
+		GITFS_DBG("release:: can't really close");
 		return -errno;
+	}
 
 	/* Update the fstree */
 	fstree_insert_update_file(path, NULL);
-	return 0;
-END:
-	if (close(fi->fh) < 0)
-		return -errno;
 	return 0;
 }
 
