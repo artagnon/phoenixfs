@@ -162,12 +162,62 @@ static int gitfs_symlink(const char *path, const char *link)
 static int gitfs_rename(const char *path, const char *newpath)
 {
 	char xnewpath[PATH_MAX];
+	struct dir_record *dr;
+	struct vfile_record *vfr, *new_vfr;
+	char *filename, *newfilename;
+	uint16_t key = ~0;
+	size_t length;
+	uint8_t start_rev, rev_nr;
 
 	GITFS_DBG("rename:: %s to %s", path, newpath);
 	build_xpath(xpath, path, 0);
 	build_xpath(xnewpath, newpath, 0);
 	if (rename(xpath, xnewpath) < 0)
 		return -errno;
+
+	/* Update fstree */
+	filename = split_basename(path, xpath);
+	if (!(dr = find_dr(xpath))) {
+		GITFS_DBG("rename:: Missing dr for %s", xpath);
+		return 0;
+	}
+
+	/* Find the old vfr to copy out data from and remove */
+	length = (size_t) strlen((char *) filename);
+	key = compute_crc32(key, (const unsigned char *) filename, length);
+	if (!(vfr = find(dr->vroot, key, 0))) {
+		GITFS_DBG("rename:: Missing vfr for %s", path);
+		return 0;
+	}
+
+	/* Make a new vfr and copy out history from old vfr */
+	newfilename = split_basename(path, NULL);
+	new_vfr = make_vfr(newfilename);
+
+	/* Compute start_rev and rev_nr */
+	if (vfr->HEAD < 0) {
+		start_rev = 0;
+		rev_nr = 0;
+	} else if (vfr->history[(vfr->HEAD + 1) % REV_TRUNCATE]) {
+		/* History is full, and is probably wrapping around */
+		start_rev = (vfr->HEAD + 1) % REV_TRUNCATE;
+		rev_nr = 20;
+	} else {
+		/* History is not completely filled */
+		start_rev = 0;
+		rev_nr = vfr->HEAD + 1;
+	}
+	GITFS_DBG("rename:: copying %d revisions", rev_nr);
+	while (start_rev < rev_nr) {
+		new_vfr->history[start_rev] = vfr->history[start_rev];
+		start_rev = (start_rev + 1) % REV_TRUNCATE;
+	}
+	new_vfr->HEAD = rev_nr - 1;
+	insert_vfr(dr, new_vfr);
+
+	/* Remove old vfr */
+	dr->vroot = remove_entry(dr->vroot, key);
+
 	return 0;
 }
 

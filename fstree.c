@@ -214,6 +214,11 @@ void insert_fr(struct vfile_record *vfr, struct file_record *fr)
 	GITFS_DBG("insert_fr:: %s [%d]", vfr->name, vfr->HEAD);
 }
 
+struct node *remove_entry(struct node *root, uint16_t key)
+{
+	return delete(root, key);
+}
+
 struct dir_record *make_dr(const char *path)
 {
 	struct dir_record *dr;
