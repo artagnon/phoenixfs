@@ -16,9 +16,9 @@ unsigned char path_buf[PATH_MAX] = "\0";
  * (struct file_record)
  */
 static void dump_frs(struct vfile_record *vfr, uint8_t start_rev,
-		uint8_t num_revs, FILE *outfile)
+		uint8_t rev_nr, FILE *outfile)
 {
-	while (start_rev < num_revs) {
+	while (start_rev < rev_nr) {
 		fwrite(vfr->history[start_rev],
 			sizeof(struct file_record), 1, outfile);
 		GITFS_DBG("dump_frs:: %s [%u]", vfr->name, start_rev);
@@ -29,12 +29,12 @@ static void dump_frs(struct vfile_record *vfr, uint8_t start_rev,
 /**
  * Format:
  * <> :=
- * num_keys | [key | name_len | name | num_revs | [<dump_frs>][...]][...]
+ * num_keys | [key | name_len | name | rev_nr | [<dump_frs>][...]][...]
  */
 static void dump_vfr_tree(struct node *root, FILE *outfile)
 {
 	struct vfile_record *vfr;
-	uint8_t start_rev, num_revs;
+	uint8_t start_rev, rev_nr;
 	uint16_t name_len;
 	register int i;
 	node *iter;
@@ -54,24 +54,25 @@ static void dump_vfr_tree(struct node *root, FILE *outfile)
 			name_len = strlen((const char *) vfr->name);
 			fwrite(&name_len, sizeof(uint16_t), 1, outfile);
 			fwrite(vfr->name, name_len * sizeof(unsigned char), 1, outfile);
+			GITFS_DBG("dump_vfr_tree:: vfr %s", (const char *) vfr->name);
 
-			/* Compute and write num_revs and HEAD */
+			/* Compute and write rev_nr and HEAD */
 			if (vfr->HEAD < 0) {
 				start_rev = 0;
-				num_revs = 0;
+				rev_nr = 0;
 			} else if (vfr->history[(vfr->HEAD + 1) % REV_TRUNCATE]) {
 				/* History is full, and is probably wrapping around */
 				start_rev = (vfr->HEAD + 1) % REV_TRUNCATE;
-				num_revs = 20;
+				rev_nr = 20;
 			} else {
 				/* History is not completely filled */
 				start_rev = 0;
-				num_revs = vfr->HEAD + 1;
+				rev_nr = vfr->HEAD + 1;
 			}
-			fwrite(&num_revs, sizeof(uint8_t), 1, outfile);
+			fwrite(&rev_nr, sizeof(uint8_t), 1, outfile);
 
 			/* Write the actual file records in chronological order */
-			dump_frs(vfr, start_rev, num_revs, outfile);
+			dump_frs(vfr, start_rev, rev_nr, outfile);
 		}
 		if (iter->pointers[BTREE_ORDER - 1] != NULL)
 			iter = iter->pointers[BTREE_ORDER - 1];
@@ -107,9 +108,9 @@ void dump_dr_tree(struct node *root, FILE *outfile)
 			name_len = strlen((const char *) dr->name);
 			fwrite(&name_len, sizeof(uint16_t), 1, outfile);
 			fwrite(dr->name, name_len * sizeof(unsigned char), 1, outfile);
+			GITFS_DBG("dump_dr_tree:: %s", (const char *) dr->name);
 
 			dump_vfr_tree(dr->vroot, outfile);
-			GITFS_DBG("dump_dr_tree:: %s", (const char *) dr->name);
 		}
 		if (iter->pointers[BTREE_ORDER - 1] != NULL)
 			iter = iter->pointers[BTREE_ORDER - 1];
@@ -126,7 +127,7 @@ void dump_dr_tree(struct node *root, FILE *outfile)
 /**
  * Format:
  * <> :=
- * num_keys | [key | name_len | name | num_revs | [<load_frs>][...]][...]
+ * num_keys | [key | name_len | name | rev_nr | [<load_frs>][...]][...]
  */
 struct node *load_vfr_tree(FILE *infile)
 {
@@ -135,24 +136,30 @@ struct node *load_vfr_tree(FILE *infile)
 	uint16_t key;
 	uint16_t num_keys;
 	uint16_t name_len;
-	uint8_t num_revs;
+	uint8_t rev_nr;
 	register int i, j;
 
 	root = NULL;
+	memset(&num_keys, 0, sizeof(uint16_t));
 	fread(&num_keys, sizeof(uint16_t), 1, infile);
 	for (i = 0; i < num_keys; i++) {
+		memset(&key, 0, sizeof(uint16_t));
 		fread(&key, sizeof(uint16_t), 1, infile);
+		memset(&name_len, 0, sizeof(uint16_t));
 		fread(&name_len, sizeof(uint16_t), 1, infile);
+		memset(&path_buf, 0, PATH_MAX);
 		fread(&path_buf, name_len * sizeof(unsigned char), 1, infile);
-		fread(&num_revs, sizeof(uint8_t), 1, infile);
+		memset(&rev_nr, 0, sizeof(uint8_t));
+		fread(&rev_nr, sizeof(uint8_t), 1, infile);
 		vfr = make_vfr((const char *) path_buf);
 		root = insert(root, key, (void *) vfr);
-		for (j = 0; j < num_revs; j++) {
+		for (j = 0; j < rev_nr; j++) {
 			vfr->history[j] = malloc(sizeof(struct file_record));
+			memset(vfr->history[j], 0, sizeof(struct file_record));
 			fread(vfr->history[j], sizeof(struct file_record), 1, infile);
 			GITFS_DBG("load_vfr_tree:: %s [%d]", vfr->name, j);
 		}
-		vfr->HEAD = num_revs - 1;
+		vfr->HEAD = rev_nr - 1;
 	}
 	return root;
 }
@@ -172,10 +179,14 @@ struct node *load_dr_tree(FILE *infile)
 	register int i;
 
 	root = NULL;
+	memset(&num_keys, 0, sizeof(uint16_t));
 	fread(&num_keys, sizeof(uint16_t), 1, infile);
 	for (i = 0; i < num_keys; i++) {
+		memset(&key, 0, sizeof(uint16_t));
 		fread(&key, sizeof(uint16_t), 1, infile);
+		memset(&name_len, 0, sizeof(uint16_t));
 		fread(&name_len, sizeof(uint16_t), 1, infile);
+		memset(&path_buf, 0, PATH_MAX);
 		fread(&path_buf, name_len * sizeof(unsigned char), 1, infile);
 		GITFS_DBG("load_dr_tree:: %s", (const char *) path_buf);
 		dr = make_dr((const char *) path_buf);
