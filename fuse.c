@@ -287,22 +287,23 @@ static int gitfs_open(const char *path, struct fuse_file_info *fi)
 	if (access(openpath, F_OK) < 0) {
 		/* Try extracting from packfile */
 		sprintf(xpath, "%s/.git/loose", ROOTENV->fsback);
-		GITFS_DBG("open:: pack %s", sha1_digest);
 		if (unpack_entry(fr->sha1, xpath) < 0)
 			return -ENOENT;
+		else
+			GITFS_DBG("open:: pack %s", sha1_digest);
 	}
 	else
 		GITFS_DBG("open:: loose %s", sha1_digest);
 
 	/* zinflate openpath onto fspath */
-	GITFS_DBG("open:: zinflate %s onto %s", openpath, fspath);
+	GITFS_DBG("open:: zinflate %s onto %s", sha1_digest, fspath);
 	if (!(infile = fopen(openpath, "rb")) ||
-		(fsfile = fopen(fspath, "wb+")) < 0)
+		!(fsfile = fopen(fspath, "wb+")))
 		return -errno;
 	if (zinflate(infile, fsfile) != Z_OK)
 		GITFS_DBG("open:: zinflate issue");
 	fclose(infile);
-	fclose(fsfile);
+	rewind(fsfile);
 END:
 	if ((fd = open(fspath, fi->flags)) < 0)
 		return -errno;

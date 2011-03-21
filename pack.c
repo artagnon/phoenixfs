@@ -185,15 +185,18 @@ int unpack_entry(unsigned char *sha1, const char *loosedir)
 	FILE *loosefh;
 	bool delta;
 
+	print_sha1(sha1_digest, sha1);
+
 	/* Convert SHA1 to offset and make sure we were successful */
-	if (!(obj_offset = find_pack_entry(sha1)))
+	if (!(obj_offset = find_pack_entry(sha1))) {
+		GITFS_DBG("unpack_entry:: missing %s", sha1_digest);
 		return -1;
+	}
 	fseek(packroot.packfh, obj_offset, SEEK_SET);
 	fread(&read_sha1, 20 * sizeof(unsigned char), 1, packroot.packfh);
 	assert(memcmp(sha1, read_sha1, 20) == 0);
 
 	fread(&delta, sizeof(bool), 1, packroot.packfh);
-	print_sha1(sha1_digest, sha1);
 	sprintf(xpath, "%s/%s", loosedir, sha1_digest);
 	if (!(loosefh = fopen(xpath, "wb+"))) {
 		GITFS_DBG("unpack_entry:: can't open %s", xpath);

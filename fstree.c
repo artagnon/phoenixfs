@@ -53,7 +53,12 @@ int build_xpath(char *xpath, const char *path, int rev)
 		sprintf(xpath, "%s/.git/loose", ROOTENV->fsback);
 		if (unpack_entry(fr->sha1, xpath) < 0)
 			return -1;
+		else
+			GITFS_DBG("open:: pack %s", sha1_digest);
 	}
+	else
+		GITFS_DBG("open:: loose %s", sha1_digest);
+
 	return 0;
 }
 
