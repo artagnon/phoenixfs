@@ -372,16 +372,42 @@ static int gitfs_statfs(const char *path, struct statvfs *statv)
 
 static int gitfs_release(const char *path, struct fuse_file_info *fi)
 {
+	struct file_record *fr;
 	FILE *infile, *outfile;
 	struct stat st;
 	unsigned char sha1[20];
+	char sha1_digest[40];
 	char outfilename[40];
+	char inpath[PATH_MAX];
 	char outpath[PATH_MAX];
 	int rev, ret;
 
 	/* Don't recursively backup history */
 	if ((rev = parse_pathspec(xpath, path))) {
 		GITFS_DBG("release:: history: %s", path);
+
+		/* Inflate the original version back onto the filesystem */
+		if (!(fr = find_fr(xpath, 0))) {
+			GITFS_DBG("release:: Can't find revision 0!");
+			return 0;
+		}
+		print_sha1(sha1_digest, fr->sha1);
+		sprintf(inpath, "%s/.git/loose/%s", ROOTENV->fsback, sha1_digest);
+		build_xpath(outpath, xpath, 0);
+
+		if (!(infile = fopen(inpath, "rb")) ||
+			!(outfile = fopen(outpath, "wb+")))
+			return -errno;
+		GITFS_DBG("release:: history: zinflate %s onto %s",
+			sha1_digest, outpath);
+		rewind(infile);
+		rewind(outfile);
+		if (zinflate(infile, outfile) != Z_OK)
+			GITFS_DBG("release:: zinflate issue");
+		fflush(outfile);
+		fclose(infile);
+		fclose(outfile);
+
 		if (close(fi->fh) < 0) {
 			GITFS_DBG("release:: can't really close");
 			return -errno;
