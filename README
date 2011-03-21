@@ -1,5 +1,5 @@
-gitfs
------
+phoenixfs
+---------
 A Git-like filesystem implemented in userspace (using FUSE). Uses
 packfile v3 for storing revision information. Dependencies:
 1. Zlib (>= 1.2)

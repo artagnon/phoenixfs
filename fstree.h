@@ -3,7 +3,7 @@
 
 #define FUSE_USE_VERSION 26
 #define _XOPEN_SOURCE 500
-#define GITFS_MAGIC 0x2888
+#define PHOENIXFS_MAGIC 0x2888
 
 #include "common.h"
 #include "btree.h"

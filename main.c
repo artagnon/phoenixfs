@@ -87,7 +87,7 @@ static void usage(const char *progname, enum subcmd cmd)
 int main(int argc, char *argv[])
 {
 	if ((getuid() == 0) || (geteuid() == 0))
-		die("Running gitfs as root opens unnacceptable security holes");
+		die("Running phoenixfs as root opens unnacceptable security holes");
 
 	if (argc < 2)
 		usage(argv[0], SUBCMD_NONE);
@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
 	if (!strncmp(argv[1], "mount", 5)) {
 		if (argc < 3)
 			usage(argv[0], SUBCMD_MOUNT);
-		return gitfs_fuse(argc, argv);
+		return phoenixfs_fuse(argc, argv);
 	} else if (!strncmp(argv[1], "log", 3)) {
 		if (argc < 2)
 			usage(argv[0], SUBCMD_LOG);

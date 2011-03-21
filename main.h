@@ -16,6 +16,6 @@ enum subcmd {
 	SUBCMD_DIFF,
 };
 
-int gitfs_fuse(int argc, char *argv[]);
+int phoenixfs_fuse(int argc, char *argv[]);
 
 #endif

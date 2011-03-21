@@ -21,7 +21,7 @@ static void dump_frs(struct vfile_record *vfr, uint8_t start_rev,
 	while (start_rev < rev_nr) {
 		fwrite(vfr->history[start_rev],
 			sizeof(struct file_record), 1, outfile);
-		GITFS_DBG("dump_frs:: %s [%u]", vfr->name, start_rev);
+		PHOENIXFS_DBG("dump_frs:: %s [%u]", vfr->name, start_rev);
 		start_rev = (start_rev + 1) % REV_TRUNCATE;
 	}
 }
@@ -54,7 +54,7 @@ static void dump_vfr_tree(struct node *root, FILE *outfile)
 			name_len = strlen((const char *) vfr->name);
 			fwrite(&name_len, sizeof(uint16_t), 1, outfile);
 			fwrite(vfr->name, name_len * sizeof(unsigned char), 1, outfile);
-			GITFS_DBG("dump_vfr_tree:: vfr %s", (const char *) vfr->name);
+			PHOENIXFS_DBG("dump_vfr_tree:: vfr %s", (const char *) vfr->name);
 
 			/* Compute and write rev_nr and HEAD */
 			if (vfr->HEAD < 0) {
@@ -108,7 +108,7 @@ void dump_dr_tree(struct node *root, FILE *outfile)
 			name_len = strlen((const char *) dr->name);
 			fwrite(&name_len, sizeof(uint16_t), 1, outfile);
 			fwrite(dr->name, name_len * sizeof(unsigned char), 1, outfile);
-			GITFS_DBG("dump_dr_tree:: %s", (const char *) dr->name);
+			PHOENIXFS_DBG("dump_dr_tree:: %s", (const char *) dr->name);
 
 			dump_vfr_tree(dr->vroot, outfile);
 		}
@@ -157,7 +157,7 @@ struct node *load_vfr_tree(FILE *infile)
 			vfr->history[j] = malloc(sizeof(struct file_record));
 			memset(vfr->history[j], 0, sizeof(struct file_record));
 			fread(vfr->history[j], sizeof(struct file_record), 1, infile);
-			GITFS_DBG("load_vfr_tree:: %s [%d]", vfr->name, j);
+			PHOENIXFS_DBG("load_vfr_tree:: %s [%d]", vfr->name, j);
 		}
 		vfr->HEAD = rev_nr - 1;
 	}
@@ -188,7 +188,7 @@ struct node *load_dr_tree(FILE *infile)
 		fread(&name_len, sizeof(uint16_t), 1, infile);
 		memset(&path_buf, 0, PATH_MAX);
 		fread(&path_buf, name_len * sizeof(unsigned char), 1, infile);
-		GITFS_DBG("load_dr_tree:: %s", (const char *) path_buf);
+		PHOENIXFS_DBG("load_dr_tree:: %s", (const char *) path_buf);
 		dr = make_dr((const char *) path_buf);
 		root = insert(root, key, (void *) dr);
 		dr->vroot = load_vfr_tree(infile);

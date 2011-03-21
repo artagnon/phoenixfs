@@ -22,7 +22,7 @@ BUILTIN_OBJS += delta.o
 BUILTIN_OBJS += loose.o
 
 ALL_TARGETS =
-ALL_TARGETS += gitfs
+ALL_TARGETS += phoenixfs
 
 CFLAGS = -g -O2 -Wall $(shell pkg-config fuse --cflags) $(shell pkg-config zlib --cflags)
 LDFLAGS = $(shell pkg-config fuse --libs) $(shell pkg-config zlib --libs)
@@ -56,7 +56,7 @@ SHA1_OBJS = block-sha1/sha1.o
 
 all:: $(ALL_TARGETS)
 
-gitfs$X: $(BUILTIN_OBJS) $(ALL_LIBS)
+phoenixfs$X: $(BUILTIN_OBJS) $(ALL_LIBS)
 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) -o $@ $(BUILTIN_OBJS) \
 		$(ALL_LDFLAGS) $(ALL_LIBS)
 

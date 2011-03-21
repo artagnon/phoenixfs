@@ -189,7 +189,7 @@ int unpack_entry(unsigned char *sha1, const char *loosedir)
 
 	/* Convert SHA1 to offset and make sure we were successful */
 	if (!(obj_offset = find_pack_entry(sha1))) {
-		GITFS_DBG("unpack_entry:: missing %s", sha1_digest);
+		PHOENIXFS_DBG("unpack_entry:: missing %s", sha1_digest);
 		return -1;
 	}
 	fseek(packroot.packfh, obj_offset, SEEK_SET);
@@ -199,16 +199,16 @@ int unpack_entry(unsigned char *sha1, const char *loosedir)
 	fread(&delta, sizeof(bool), 1, packroot.packfh);
 	sprintf(xpath, "%s/%s", loosedir, sha1_digest);
 	if (!(loosefh = fopen(xpath, "wb+"))) {
-		GITFS_DBG("unpack_entry:: can't open %s", xpath);
+		PHOENIXFS_DBG("unpack_entry:: can't open %s", xpath);
 		return -errno;
 	}
 	if (!delta) {
 		fread(&size, sizeof(off_t), 1, packroot.packfh);
-		GITFS_DBG("unpack_entry:: non-delta %s", sha1_digest);
+		PHOENIXFS_DBG("unpack_entry:: non-delta %s", sha1_digest);
 		buffer_copy_bytes(packroot.packfh, loosefh, size);
 	}
 	else
-		GITFS_DBG("unpack_entry:: delta %s", sha1_digest);
+		PHOENIXFS_DBG("unpack_entry:: delta %s", sha1_digest);
 	fclose(loosefh);
 	return 0;
 }
@@ -298,7 +298,7 @@ int load_packing_info(const char *pack_path, const char *idx_path,
 	struct stat st;
 	struct pack_header hdr;
 
-	GITFS_DBG("load_packing_info:: %s %s %d", pack_path, idx_path, existing_pack);
+	PHOENIXFS_DBG("load_packing_info:: %s %s %d", pack_path, idx_path, existing_pack);
 	if (!(loaded_pack = existing_pack)) {
 		/* Nothing to load */
 		strcpy(packroot.pack_path, pack_path);
@@ -451,7 +451,7 @@ static int write_pack_hdr(const char *pack_path)
 
 void dump_packing_info(const char *loosedir)
 {
-	GITFS_DBG("dump_packing_info:: %s", loaded_pack ? "append" : "create");
+	PHOENIXFS_DBG("dump_packing_info:: %s", loaded_pack ? "append" : "create");
 	if (!loaded_pack)
 		write_pack_hdr(packroot.pack_path);
 	packup_loose_objects(packroot.packfh, packroot.idx_data,

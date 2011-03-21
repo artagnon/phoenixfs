@@ -23,7 +23,7 @@ void add_loose_entry(unsigned char *sha1, size_t size)
 
 	this_nr = looseroot.nr;
 	print_sha1(sha1_digest, sha1);
-	GITFS_DBG("add_loose_entry:: %s [%d]", sha1_digest, this_nr);
+	PHOENIXFS_DBG("add_loose_entry:: %s [%d]", sha1_digest, this_nr);
 	looseroot.entries[this_nr] = malloc(sizeof(struct pack_idx_entry));
 	memcpy(looseroot.entries[this_nr]->sha1, sha1, 20);
 	looseroot.entries[this_nr]->size = size;
@@ -67,8 +67,8 @@ void packup_loose_objects(FILE *packfh, const void *idx_data,
 		sprintf(xpath, "%s/%s", loosedir, sha1_digest);
 		if (!(datafh = fopen(xpath, "rb")) ||
 			(lstat(xpath, &st) < 0))
-			GITFS_DBG("packup_loose_objects:: Missing %s", sha1_digest);
-		GITFS_DBG("packup_loose_objects:: %s [%d]", sha1_digest, i);
+			PHOENIXFS_DBG("packup_loose_objects:: Missing %s", sha1_digest);
+		PHOENIXFS_DBG("packup_loose_objects:: %s [%d]", sha1_digest, i);
 		fwrite(&(st.st_size), sizeof(off_t), 1, packfh);
 		buffer_copy_bytes(datafh, packfh, st.st_size);
 		fclose(datafh);

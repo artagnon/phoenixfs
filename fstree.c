@@ -41,7 +41,7 @@ int build_xpath(char *xpath, const char *path, int rev)
 		return 0;
 	}
 	if (!(fr = find_fr(path, rev))) {
-		GITFS_DBG("build_xpath:: missing: %s@%d", path, rev);
+		PHOENIXFS_DBG("build_xpath:: missing: %s@%d", path, rev);
 		/* Might be a directory; copy and give to caller */
 		strcpy(xpath, path);
 		return -1;
@@ -54,10 +54,10 @@ int build_xpath(char *xpath, const char *path, int rev)
 		if (unpack_entry(fr->sha1, xpath) < 0)
 			return -1;
 		else
-			GITFS_DBG("open:: pack %s", sha1_digest);
+			PHOENIXFS_DBG("open:: pack %s", sha1_digest);
 	}
 	else
-		GITFS_DBG("open:: loose %s", sha1_digest);
+		PHOENIXFS_DBG("open:: loose %s", sha1_digest);
 
 	return 0;
 }
@@ -77,7 +77,7 @@ char *split_basename(const char *path, char *dirname)
 	length = (length == 1 ? 2 : length);
 
 	if (!dirname) {
-		GITFS_DBG("split_basename:: path: %s, filename: %s",
+		PHOENIXFS_DBG("split_basename:: path: %s, filename: %s",
 			path, filename);
 		return filename;
 	}
@@ -85,7 +85,7 @@ char *split_basename(const char *path, char *dirname)
 	memcpy(dirname, path, length - 1);
 	dirname[length - 1] = '\0';
 
-	GITFS_DBG("split_basename:: path: %s, dirname: %s, filename: %s",
+	PHOENIXFS_DBG("split_basename:: path: %s, dirname: %s, filename: %s",
 		path, dirname, filename);
 	return filename;
 }
@@ -138,10 +138,10 @@ struct dir_record *find_dr(const char *path)
 	length = (size_t) strlen((char *) path);
 	key = compute_crc32(key, (const unsigned char *) path, length);
 	if (!(dr = find(fsroot, key, 0))) {
-		GITFS_DBG("find_dr:: missing %s", path);
+		PHOENIXFS_DBG("find_dr:: missing %s", path);
 		return NULL;
 	}
-	GITFS_DBG("find_dr:: found %s", path);
+	PHOENIXFS_DBG("find_dr:: found %s", path);
 	return dr;
 }
 
@@ -155,16 +155,16 @@ struct vfile_record *find_vfr(const char *path)
 
 	filename = split_basename(path, dirname);
 	if (!(dr = find_dr(dirname)) || !dr->vroot) {
-		GITFS_DBG("find_vfr:: not found %s", path);
+		PHOENIXFS_DBG("find_vfr:: not found %s", path);
 		return NULL;
 	}
 	length = (size_t) strlen((char *) filename);
 	key = compute_crc32(key, (const unsigned char *) filename, length);
 	if (!(vfr = find(dr->vroot, key, 0))) {
-		GITFS_DBG("find_vfr:: not found %s", path);
+		PHOENIXFS_DBG("find_vfr:: not found %s", path);
 		return NULL;
 	}
-	GITFS_DBG("find_vfr:: found %s", path);
+	PHOENIXFS_DBG("find_vfr:: found %s", path);
 	return vfr;
 }
 
@@ -174,16 +174,16 @@ struct file_record *find_fr(const char *path, int rev)
 	struct file_record *fr;
 
 	if (!(vfr = find_vfr(path))) {
-		GITFS_DBG("find_fr:: not found %s", path);
+		PHOENIXFS_DBG("find_fr:: not found %s", path);
 		return NULL;
 	}
 	/* Translate rev to mean "number of revs before HEAD" */
 	rev = (vfr->HEAD - rev) % REV_TRUNCATE;
 	if (!(fr = vfr->history[rev])) {
-		GITFS_DBG("find_fr:: not found %s", path);
+		PHOENIXFS_DBG("find_fr:: not found %s", path);
 		return NULL;
 	}
-	GITFS_DBG("find_fr:: found %s", path);
+	PHOENIXFS_DBG("find_fr:: found %s", path);
 	return fr;
 }
 
@@ -194,7 +194,7 @@ void insert_dr(struct dir_record *dr)
 
 	length = (size_t) strlen((char *) dr->name);
 	key = compute_crc32(key, (const unsigned char *) dr->name, length);
-	GITFS_DBG("insert_dr:: %08X", key);
+	PHOENIXFS_DBG("insert_dr:: %08X", key);
 	fsroot = insert(fsroot, key, dr);
 }
 
@@ -205,7 +205,7 @@ void insert_vfr(struct dir_record *dr, struct vfile_record *vfr)
 
 	length = (size_t) strlen((char *) vfr->name);
 	key = compute_crc32(key, (const unsigned char *) vfr->name, length);
-	GITFS_DBG("insert_vfr:: %08X", key);
+	PHOENIXFS_DBG("insert_vfr:: %08X", key);
 	dr->vroot = insert(dr->vroot, key, vfr);
 }
 
@@ -216,7 +216,7 @@ void insert_fr(struct vfile_record *vfr, struct file_record *fr)
 	newHEAD = (vfr->HEAD + 1) % REV_TRUNCATE;
 	vfr->history[newHEAD] = fr;
 	vfr->HEAD = newHEAD;
-	GITFS_DBG("insert_fr:: %s [%d]", vfr->name, vfr->HEAD);
+	PHOENIXFS_DBG("insert_fr:: %s [%d]", vfr->name, vfr->HEAD);
 }
 
 struct node *remove_entry(struct node *root, uint16_t key)
@@ -228,7 +228,7 @@ struct dir_record *make_dr(const char *path)
 {
 	struct dir_record *dr;
 
-	GITFS_DBG("make_dr:: %s", path);
+	PHOENIXFS_DBG("make_dr:: %s", path);
 	if (!(dr = malloc(sizeof(struct dir_record))))
 		return NULL;
 	memcpy(dr->name, path, strlen(path) + 1);
@@ -240,7 +240,7 @@ struct vfile_record *make_vfr(const char *name)
 {
 	struct vfile_record *vfr;
 
-	GITFS_DBG("make_vfr:: %s", name);
+	PHOENIXFS_DBG("make_vfr:: %s", name);
 	if (!(vfr = malloc(sizeof(struct vfile_record))))
 		return NULL;
 	memcpy(vfr->name, name, strlen(name) + 1);
@@ -258,20 +258,20 @@ struct file_record *make_fr(const char *path, const char *follow)
 	struct stat st;
 	FILE *infile;
 
-	GITFS_DBG("make_fr:: %s", path);
+	PHOENIXFS_DBG("make_fr:: %s", path);
 	if (!(fr = malloc(sizeof(struct file_record))))
 		return NULL;
 	build_xpath(xpath, path, 0);
 
 	if (lstat(xpath, &st) < 0) {
-		GITFS_DBG("make_fr:: can't stat %s", xpath);
+		PHOENIXFS_DBG("make_fr:: can't stat %s", xpath);
 		free(fr);
 		return NULL;
 	}
 
 	/* No point computing SHA1 of symlinks */
 	if (S_ISLNK(st.st_mode)) {
-		GITFS_DBG("make_fr:: link %s to %s", path, follow);
+		PHOENIXFS_DBG("make_fr:: link %s to %s", path, follow);
 		memset(fr->sha1, 0, 20);
 		strcpy((char *) fr->follow, follow);
 		goto END;
@@ -307,7 +307,7 @@ void fstree_insert_update_file(const char *path, const char *follow)
 		length = (size_t) strlen((char *) filename);
 		key = compute_crc32(key, (const unsigned char *) filename, length);
 		if (!(vfr = find(dr->vroot, key, 0))) {
-			GITFS_DBG("fstree_insert_update_file:: missing vfr: %s", filename);
+			PHOENIXFS_DBG("fstree_insert_update_file:: missing vfr: %s", filename);
 			goto VFR;
 		}
 		else {
@@ -326,13 +326,13 @@ VFR:
 	insert_vfr(dr, vfr);
 FR:
 	if (!(new_fr = make_fr(path, follow))) {
-		GITFS_DBG("fstree_insert_update_file:: Can't make fr %s", path);
+		PHOENIXFS_DBG("fstree_insert_update_file:: Can't make fr %s", path);
 		return;
 	}
 
 	/* If content is present in the old fr, don't make a new fr */
 	if (fr && !memcmp(fr->sha1, new_fr->sha1, 20)) {
-		GITFS_DBG("fstree_insert_update_file:: unmodified: %s", path);
+		PHOENIXFS_DBG("fstree_insert_update_file:: unmodified: %s", path);
 		free(new_fr);
 		return;
 	}
@@ -353,11 +353,11 @@ void fstree_remove_file(const char *path)
 	key = compute_crc32(key, (const unsigned char *) filename, length);
 
 	if (!(dr = find_dr(dirname))) {
-		GITFS_DBG("fstree_remove_file:: missing %s", dirname);
+		PHOENIXFS_DBG("fstree_remove_file:: missing %s", dirname);
 		return;
 	}
 	if (!(vfr = find(dr->vroot, key, 0))) {
-		GITFS_DBG("fstree_remove_file:: missing %s", filename);
+		PHOENIXFS_DBG("fstree_remove_file:: missing %s", filename);
 		return;
 	}
 	for (rev = 0; ; rev++) {
@@ -365,7 +365,7 @@ void fstree_remove_file(const char *path)
 			break;
 		free(vfr->history[rev]);
 	}
-	GITFS_DBG("fstree_remove_file:: %s", path);
+	PHOENIXFS_DBG("fstree_remove_file:: %s", path);
 	delete(dr->vroot, key);
 }
 

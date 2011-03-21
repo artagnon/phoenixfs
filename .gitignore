@@ -1,4 +1,4 @@
 *~
 *.o
-gitfs
 *lib.a
+phoenixfs
