@@ -66,8 +66,17 @@ char *split_basename(const char *path, char *dirname)
 	/* In the worst case, strrchr returns 0: leading '/' */
 	filename = strrchr(path, '/') + 1;
 
+	/* Strip trailing '/' from all directories except '/' itself */
 	/* +1 to accomodate the null terminator */
-	length = strlen(path) - strlen(filename) + 1;
+	length = strlen(path) - strlen(filename);
+	length = (length == 1 ? 2 : length);
+
+	if (!dirname) {
+		GITFS_DBG("split_basename:: path: %s, filename: %s",
+			path, filename);
+		return filename;
+	}
+
 	memcpy(dirname, path, length - 1);
 	dirname[length - 1] = '\0';
 
