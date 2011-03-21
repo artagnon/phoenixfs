@@ -148,10 +148,14 @@ static int gitfs_access(const char *path, int mask)
 
 static int gitfs_symlink(const char *path, const char *link)
 {
+	char xlink[PATH_MAX];
+
 	GITFS_DBG("symlink:: %s to %s", link, path);
-	build_xpath(xpath, link, 0);
-	if (symlink(path, xpath) < 0)
+	sprintf(xpath, "%s/%s", ROOTENV->fsback, path);
+	build_xpath(xlink, link, 0);
+	if (symlink(xpath, xlink) < 0)
 		return -errno;
+	fstree_insert_update_file(link, path);
 	return 0;
 }
 
@@ -396,8 +400,10 @@ static int gitfs_ftruncate(const char *path,
 
 static int gitfs_readlink(const char *path, char *link, size_t size)
 {
+	/* Always pass through to underlying filesystem */
+	GITFS_DBG("readlink:: %s", path);
 	build_xpath(xpath, path, 0);
-	if (readlink(path, link, size - 1) < 0)
+	if (readlink(xpath, link, size - 1) < 0)
 		return -errno;
 	return 0;
 }
