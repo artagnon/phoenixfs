@@ -23,7 +23,7 @@ static void subcmd_diff(const char *pathspec1, const char *pathspec2)
 		(!(file2 = fopen(pathspec2, "rb"))))
 		die("Could not open %s: %d", pathspec2, -errno);
 
-	gitfs_diff(file1, st1.st_size, file2, st2.st_size, stdout);
+	phoenixfs_diff(file1, st1.st_size, file2, st2.st_size, stdout);
 	fclose(file1);
 	fclose(file2);
 }

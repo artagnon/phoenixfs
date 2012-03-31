@@ -388,7 +388,7 @@ void print_fstree(void)
 	struct node *queue;
 	FILE *rootlog_fh;
 
-	rootlog_fh = fopen("/tmp/gitfs.log", "a");
+	rootlog_fh = fopen("/tmp/phoenixfs.log", "a");
 	if (fsroot == NULL) {
 		fprintf(rootlog_fh, "Empty tree.\n");
 		return;

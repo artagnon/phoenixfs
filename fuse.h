@@ -20,7 +20,7 @@
 #include "compress.h"
 #include "pack.h"
 
-int gitfs_fuse(int argc, char *argv[]);
+int phoenixfs_fuse(int argc, char *argv[]);
 
 #define ROOTENV ((struct env_t *) fuse_get_context()->private_data)
 

@@ -24,7 +24,7 @@ static int write_diff(void *file, mmbuffer_t *mb, int nbuf)
 	return 0;
 }
 
-int gitfs_diff(FILE* file1, size_t sz1, FILE* file2, size_t sz2, FILE* outfile)
+int phoenixfs_diff(FILE* file1, size_t sz1, FILE* file2, size_t sz2, FILE* outfile)
 {
 	int ret;
 	xdemitcb_t ecb;

@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
 			die("Could not open %s", argv[3]);
 	}
 
-	gitfs_diff(file1, sz1, file2, sz2, outfile);
+	phoenixfs_diff(file1, sz1, file2, sz2, outfile);
 	fclose(file1);
 	fclose(file2);
 	if (outfile)
