@@ -74,7 +74,7 @@ static void usage(const char *progname, enum subcmd cmd)
 	case SUBCMD_NONE:
 		die("Usage: %s <subcommand> [arguments ...]", progname);
 	case SUBCMD_MOUNT:
-		die("Usage: %s mount <packfile> <mountpoint>", progname);
+		die("Usage: %s mount <gitdir> <mountpoint>", progname);
 	case SUBCMD_LOG:
 		die("Usage: %s log <filename>", progname);
 	case SUBCMD_DIFF:

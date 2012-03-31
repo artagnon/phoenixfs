@@ -1,8 +1,29 @@
 phoenixfs
 ---------
 A Git-like filesystem implemented in userspace (using FUSE). Uses
-packfile v3 for storing revision information. Dependencies:
+packfile v3 for storing revision information.
+
+Dependencies
+------------
+0. Git
 1. Zlib (>= 1.2)
 2. FUSE (>= 2.6)
 3. pkg-config (>= 0.25)
 4. Linux kernel (>= 2.6.15)
+
+Usage
+-----
+For the first run, you need two directories:
+1. A git directory where the data will be stored.  You need to `git
+init` the directory and `mkdir .git/loose`.
+2. An empty directory to use as the mountpoint.
+
+  $ cd /tmp
+  $ mkdir gitdir mountpoint
+  $ cd gitdir
+  $ git init; mkdir .git/loose
+  $ cd ..
+  $ phoneixfs mount gitdir mountpoint
+
+Use the mountpoint as you see fit.  Data will be written to the gitdir
+on umount: you can use it for subsequent mounts.
