@@ -519,9 +519,9 @@ static void phoenixfs_destroy(void *userdata)
 	FILE *outfile;
 
 	/* Persist the fstree */
-	sprintf(xpath, "%s/.git/HEAD", ROOTENV->fsback);
+	sprintf(xpath, "%s/.git/fstree", ROOTENV->fsback);
 	if (!(outfile = fopen(xpath, "wb"))) {
-		PHOENIXFS_DBG("destroy:: Can't open .git/HEAD to persist");
+		PHOENIXFS_DBG("destroy:: Can't open .git/fstree to persist");
 		return;
 	}
 	PHOENIXFS_DBG("destroy:: dumping fstree");
@@ -619,8 +619,8 @@ int phoenixfs_fuse(int argc, char *argv[])
 	PHOENIXFS_DBG("phoenixfs_fuse:: fsback: %s, mountpoint: %s",
 		rootenv.fsback, rootenv.mountpoint);
 
-	/* Check for .git/HEAD to load tree */
-	sprintf(xpath, "%s/.git/HEAD", rootenv.fsback);
+	/* Check for .git/fstree to load tree */
+	sprintf(xpath, "%s/.git/fstree", rootenv.fsback);
 	if (!access(xpath, F_OK) &&
 		(infile = fopen(xpath, "rb"))) {
 		PHOENIXFS_DBG("phoenixfs_fuse:: loading fstree");
