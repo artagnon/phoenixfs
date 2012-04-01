@@ -65,9 +65,11 @@ void packup_loose_objects(FILE *packfh, const void *idx_data,
 		/* Write the zlib stream or delta */
 		print_sha1(sha1_digest, this_entry->sha1);
 		sprintf(xpath, "%s/%s", loosedir, sha1_digest);
-		if (!(datafh = fopen(xpath, "rb")) ||
-			(lstat(xpath, &st) < 0))
-			PHOENIXFS_DBG("packup_loose_objects:: Missing %s", sha1_digest);
+		if ((lstat(xpath, &st) < 0) ||
+			!(datafh = fopen(xpath, "rb"))) {
+			PHOENIXFS_DBG("packup_loose_objects:: Creating %s", sha1_digest);
+			datafh = fopen(xpath, "wb");
+		}
 		PHOENIXFS_DBG("packup_loose_objects:: %s [%d]", sha1_digest, i);
 		fwrite(&(st.st_size), sizeof(off_t), 1, packfh);
 		buffer_copy_bytes(datafh, packfh, st.st_size);
