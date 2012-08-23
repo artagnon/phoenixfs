@@ -15,13 +15,13 @@ Usage
 -----
 For the first run, you need two directories:
 1. A git directory where the data will be stored.  You need to `git
-init` the directory and `mkdir .git/loose`.
+init` in the directory.
 2. An empty directory to use as the mountpoint.
 
   $ cd /tmp
   $ mkdir gitdir mountpoint
   $ cd gitdir
-  $ git init; mkdir .git/loose
+  $ git init
   $ cd ..
   $ phoneixfs mount gitdir mountpoint
 

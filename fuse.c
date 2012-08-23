@@ -610,6 +610,7 @@ int phoenixfs_fuse(int argc, char *argv[])
 	/* Check for .git/loose directory */
 	sprintf(xpath, "%s/.git/loose", rootenv.fsback);
 
+	mkdir(xpath, S_IRUSR | S_IWUSR | S_IXUSR);
 	if ((lstat(xpath, &st) < 0) ||
 		(access(xpath, R_OK | W_OK | X_OK) < 0))
 		die(".git/loose doesn't have rwx permissions: %s", xpath);
