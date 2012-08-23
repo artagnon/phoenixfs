@@ -68,7 +68,7 @@ int sha1_file(FILE *infile, size_t size, unsigned char *sha1)
 	return 0;
 }
 
-void print_sha1(char *dst, unsigned char *sha1) {
+void print_sha1(char *dst, const unsigned char *sha1) {
 	register int i;
 	for (i = 0; i < 20; i++)
 		dst ? sprintf(dst + 2 * i, "%02x", sha1[i]) :

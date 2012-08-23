@@ -136,7 +136,7 @@ off_t find_pack_entry(const unsigned char *sha1)
 {
 	const uint32_t *fanout = packroot.idx_data;
 	const unsigned char *sha1_idx = packroot.idx_data;
-	unsigned hi, lo, mi, cmp, stride;
+	unsigned hi, lo, stride;
 	char sha1_digest[40];
 	int pos;
 
@@ -183,19 +183,23 @@ int unpack_entry(unsigned char *sha1, const char *loosedir)
 		PHOENIXFS_DBG("unpack_entry:: missing %s", sha1_digest);
 		return -1;
 	}
-	PHOENIXFS_DBG("unpack_entry:: %s %lld", sha1_digest, obj_offset);
+	PHOENIXFS_DBG("unpack_entry:: %s %lld", sha1_digest,
+		(long long int)obj_offset);
 	fseek(packroot.packfh, obj_offset, SEEK_SET);
-	fread(&read_sha1, 20 * sizeof(unsigned char), 1, packroot.packfh);
+	if (fread(&read_sha1, 20 * sizeof(unsigned char), 1, packroot.packfh) < 1)
+		die("Read error: read_sha1");
 	assert(memcmp(sha1, read_sha1, 20) == 0);
 
-	fread(&delta, sizeof(bool), 1, packroot.packfh);
+	if (fread(&delta, sizeof(bool), 1, packroot.packfh) < 1)
+		die("Read error: delta");
 	sprintf(xpath, "%s/%s", loosedir, sha1_digest);
 	if (!(loosefh = fopen(xpath, "wb+"))) {
 		PHOENIXFS_DBG("unpack_entry:: can't open %s", xpath);
 		return -errno;
 	}
 	if (!delta) {
-		fread(&size, sizeof(off_t), 1, packroot.packfh);
+		if (fread(&size, sizeof(off_t), 1, packroot.packfh) < 1)
+			die("Read error: %lld", (long long int)size);
 		PHOENIXFS_DBG("unpack_entry:: non-delta %s", sha1_digest);
 		buffer_copy_bytes(packroot.packfh, loosefh, size);
 	}
@@ -321,8 +325,8 @@ int load_packing_info(const char *pack_path, const char *idx_path,
 
 	/* Verify we recognize this pack file format */
 	rewind(packroot.packfh);
-	if (fread(&hdr, sizeof(hdr), 1, packroot.packfh) < 0)
-		die("Read error: %s", pack_path);
+	if (fread(&hdr, sizeof(hdr), 1, packroot.packfh) < 1)
+		die("Read error: hdr");
 	if (hdr.signature != htonl(PACK_SIGNATURE))
 		die("Corrupt pack signature: %d", ntohl(hdr.signature));
 	if (hdr.version != htonl(PACK_VERSION))
@@ -451,7 +455,7 @@ void dump_packing_info(const char *loosedir)
 	fclose(packroot.packfh);
 }
 
-void mark_for_packing(unsigned char *sha1, size_t size)
+void mark_for_packing(const unsigned char *sha1, size_t size)
 {
-	add_loose_entry(sha1, size);
+	add_loose_entry((unsigned char *)sha1, size);
 }

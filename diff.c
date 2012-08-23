@@ -10,7 +10,7 @@ static int load_mmfile(mmfile_t *mf_ptr, FILE *file, size_t sz)
 {
 	if (!(mf_ptr->ptr = malloc(sz)))
 		return -errno;
-	if (fread(mf_ptr->ptr, sz, 1, file) < 0)
+	if (fread(mf_ptr->ptr, sz, 1, file) < 1)
 		return -errno;
 	mf_ptr->size = sz;
 	return 0;

@@ -295,7 +295,7 @@ void fstree_insert_update_file(const char *path, const char *follow)
 {
 	struct dir_record *dr;
 	struct vfile_record *vfr;
-	struct file_record *fr, *new_fr;
+	struct file_record *fr = NULL, *new_fr;
 	uint16_t key = ~0;
 	char *filename;
 	size_t length;
@@ -313,8 +313,6 @@ void fstree_insert_update_file(const char *path, const char *follow)
 		else {
 			if (vfr->HEAD >= 0)
 				fr = vfr->history[vfr->HEAD];
-			else
-				fr = NULL;
 			goto FR;
 		}
 	}

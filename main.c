@@ -47,7 +47,7 @@ static void subcmd_log(const char *path)
 		t = localtime(&st.st_mtime);
 		strftime(date_buf, DATE_LEN, "%a, %d %b %Y %T", t);
 		printf("Date:\t%s\n", date_buf);
-		printf("Size:\t%lu bytes\n", st.st_size);
+		printf("Size:\t%lld bytes\n", (long long int)st.st_size);
 		switch(st.st_mode) {
 		case S_IFREG | 0755:
 			strcpy(mode_buf, "Executable file");

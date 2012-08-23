@@ -250,7 +250,7 @@ static int phoenixfs_chown(const char *path, uid_t uid, gid_t gid)
 
 static int phoenixfs_truncate(const char *path, off_t newsize)
 {
-	PHOENIXFS_DBG("truncate:: %s to %lu", path, newsize);
+	PHOENIXFS_DBG("truncate:: %s to %lld", path, (long long int)newsize);
 	build_xpath(xpath, path, 0);
 	if (truncate(xpath, newsize) < 0)
 		return -errno;

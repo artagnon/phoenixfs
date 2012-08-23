@@ -11,7 +11,7 @@
 #define SHA1_Final	blk_SHA1_Final
 
 int sha1_file(FILE *infile, size_t size, unsigned char *sha1);
-void print_sha1(char *dst, unsigned char *sha1);
+void print_sha1(char *dst, const unsigned char *sha1);
 int get_sha1_hex(const char *hex, unsigned char *sha1);
 
 #endif

@@ -16,7 +16,7 @@ static int size_compare(const void *_a, const void *_b)
 	return (a->size < b->size) ? -1 : (a->size > b->size);
 }
 
-void add_loose_entry(unsigned char *sha1, size_t size)
+void add_loose_entry(const unsigned char *sha1, size_t size)
 {
 	uint32_t this_nr;
 	char sha1_digest[40];
@@ -71,7 +71,7 @@ void packup_loose_objects(FILE *packfh, const void *idx_data,
 			datafh = fopen(xpath, "wb");
 		}
 		PHOENIXFS_DBG("packup_loose_objects:: %s [%d] %lld", sha1_digest,
-			i, this_entry->offset);
+			i, (long long int)this_entry->offset);
 		fwrite(&(st.st_size), sizeof(off_t), 1, packfh);
 		buffer_copy_bytes(datafh, packfh, st.st_size);
 		fclose(datafh);

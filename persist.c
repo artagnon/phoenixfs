@@ -143,22 +143,29 @@ struct node *load_vfr_tree(FILE *infile)
 
 	root = NULL;
 	memset(&num_keys, 0, sizeof(uint16_t));
-	fread(&num_keys, sizeof(uint16_t), 1, infile);
+	if (fread(&num_keys, sizeof(uint16_t), 1, infile) < 1)
+		die("Read error: num_keys");
 	for (i = 0; i < num_keys; i++) {
 		memset(&key, 0, sizeof(uint16_t));
-		fread(&key, sizeof(uint16_t), 1, infile);
+		if (fread(&key, sizeof(uint16_t), 1, infile) < 1)
+			die("Read error: key");
 		memset(&name_len, 0, sizeof(uint16_t));
-		fread(&name_len, sizeof(uint16_t), 1, infile);
+		if (fread(&name_len, sizeof(uint16_t), 1, infile) < 1)
+			die("Read error: name_len");
 		memset(&path_buf, 0, PATH_MAX);
-		fread(&path_buf, name_len * sizeof(unsigned char), 1, infile);
+		if (fread(&path_buf, name_len * sizeof(unsigned char), 1, infile) < 1)
+			die("Read error: path_buf");
 		memset(&rev_nr, 0, sizeof(uint8_t));
-		fread(&rev_nr, sizeof(uint8_t), 1, infile);
+		if (fread(&rev_nr, sizeof(uint8_t), 1, infile) < 1)
+			die("Read error: rev_nr");
 		vfr = make_vfr((const char *) path_buf);
 		root = insert(root, key, (void *) vfr);
 		for (j = 0; j < rev_nr; j++) {
 			vfr->history[j] = malloc(sizeof(struct file_record));
 			memset(vfr->history[j], 0, sizeof(struct file_record));
-			fread(vfr->history[j], sizeof(struct file_record), 1, infile);
+			if (fread(vfr->history[j], sizeof(struct file_record),
+					1, infile) < 1)
+				die("Read error: vfr->history[%d]", j);
 			PHOENIXFS_DBG("load_vfr_tree:: %s [%d]", vfr->name, j);
 		}
 		vfr->HEAD = rev_nr - 1;
@@ -182,14 +189,18 @@ struct node *load_dr_tree(FILE *infile)
 
 	root = NULL;
 	memset(&num_keys, 0, sizeof(uint16_t));
-	fread(&num_keys, sizeof(uint16_t), 1, infile);
+	if (fread(&num_keys, sizeof(uint16_t), 1, infile) < 1)
+		die("Read error: num_keys");
 	for (i = 0; i < num_keys; i++) {
 		memset(&key, 0, sizeof(uint16_t));
-		fread(&key, sizeof(uint16_t), 1, infile);
+		if (fread(&key, sizeof(uint16_t), 1, infile) < 1)
+			die("Read error: key");
 		memset(&name_len, 0, sizeof(uint16_t));
-		fread(&name_len, sizeof(uint16_t), 1, infile);
+		if (fread(&name_len, sizeof(uint16_t), 1, infile) < 1)
+			die("Read error: name_len");
 		memset(&path_buf, 0, PATH_MAX);
-		fread(&path_buf, name_len * sizeof(unsigned char), 1, infile);
+		if (fread(&path_buf, name_len * sizeof(unsigned char), 1, infile) < 1)
+			die("Read error: path_buf");
 		PHOENIXFS_DBG("load_dr_tree:: %s", (const char *) path_buf);
 		dr = make_dr((const char *) path_buf);
 		root = insert(root, key, (void *) dr);
