@@ -24,12 +24,9 @@ static off_t nth_packed_object_offset(uint32_t n)
 	const unsigned char *index = packroot.idx_data;
 	uint32_t off;
 
-	/* Skip the header, fanout table, and SHA1 table */
-	index += 8;
 	index += 4 * 256;
-	index += packroot.nr * 20;
-
-	return ntohl(*((uint32_t *)(index + 4 * n)));
+	index += 8 + packroot.nr * 20;
+	off = ntohl(*((uint32_t *)(index + 4 * n)));
 	if (!(off & 0x80000000))
 		return off;
 	index += packroot.nr * 4 + (off & 0x7fffffff) * 8;
@@ -140,11 +137,11 @@ off_t find_pack_entry(const unsigned char *sha1)
 	const uint32_t *fanout = packroot.idx_data;
 	const unsigned char *sha1_idx = packroot.idx_data;
 	unsigned hi, lo, mi, cmp, stride;
+	char sha1_digest[40];
 	int pos;
 
-	fanout += 2;
-
 	/* Skip the header and go  to the SHA1 section */
+	fanout += 2;
 	sha1_idx += 8;
 	sha1_idx += 4 * 256;
 
@@ -152,24 +149,18 @@ off_t find_pack_entry(const unsigned char *sha1)
 	lo = ((*sha1 == 0x0) ? 0 : ntohl(fanout[*sha1 - 1]));
 	stride = 20;
 
+	print_sha1(sha1_digest, sha1);
+	PHOENIXFS_DBG("find_pack_entry:: %s %u %u %u", sha1_digest,
+		lo, hi, packroot.nr);
+
 	pos = sha1_entry_pos(sha1_idx, stride, 0,
 			lo, hi, packroot.nr, sha1);
+
+	PHOENIXFS_DBG("find_pack_entry:: pos = %d", pos);
+
 	if (pos < 0)
 		return 0;
 	return nth_packed_object_offset(pos);
-
-	do {
-		mi = (lo + hi) / 2;
-		cmp = memcmp(sha1_idx + mi * stride, sha1, 20);
-
-		if (!cmp)
-			return nth_packed_object_offset(mi);
-		if (cmp > 0)
-			hi = mi;
-		else
-			lo = mi+1;
-	} while (lo < hi);
-	return 0;
 }
 
 /**
@@ -192,6 +183,7 @@ int unpack_entry(unsigned char *sha1, const char *loosedir)
 		PHOENIXFS_DBG("unpack_entry:: missing %s", sha1_digest);
 		return -1;
 	}
+	PHOENIXFS_DBG("unpack_entry:: %s %lld", sha1_digest, obj_offset);
 	fseek(packroot.packfh, obj_offset, SEEK_SET);
 	fread(&read_sha1, 20 * sizeof(unsigned char), 1, packroot.packfh);
 	assert(memcmp(sha1, read_sha1, 20) == 0);

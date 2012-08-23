@@ -70,7 +70,8 @@ void packup_loose_objects(FILE *packfh, const void *idx_data,
 			PHOENIXFS_DBG("packup_loose_objects:: Creating %s", sha1_digest);
 			datafh = fopen(xpath, "wb");
 		}
-		PHOENIXFS_DBG("packup_loose_objects:: %s [%d]", sha1_digest, i);
+		PHOENIXFS_DBG("packup_loose_objects:: %s [%d] %lld", sha1_digest,
+			i, this_entry->offset);
 		fwrite(&(st.st_size), sizeof(off_t), 1, packfh);
 		buffer_copy_bytes(datafh, packfh, st.st_size);
 		fclose(datafh);
