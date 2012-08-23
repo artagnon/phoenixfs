@@ -58,10 +58,10 @@ all:: $(ALL_TARGETS)
 test-%.o: test-%.c ../%.c ../common.c
 	$(QUIET_CC)$(CC) -I../ -o test-$*.o -c $(ALL_CFLAGS) $<
 
-test-pack$X: test-pack.o ../pack.o ../common.o
+test-pack$X: test-pack.o ../pack.o ../loose.o ../sha1.o ../buffer.o ../common.o $(SHA1_LIB)
 	$(QUIET_LINK)$(CC) -I../ $(ALL_CFLAGS) -o $@ test-pack.o \
-		../pack.o ../common.o \
-		$(ALL_LDFLAGS)
+		../pack.o ../loose.o ../sha1.o ../buffer.o ../common.o \
+		$(ALL_LDFLAGS) $(SHA1_LIB)
 
 test-diff$X: test-diff.o ../diff.o ../common.o $(XDIFF_LIB)
 	$(QUIET_LINK)$(CC) -I../ $(ALL_CFLAGS) -o $@ test-diff.o \

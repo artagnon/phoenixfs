@@ -5,20 +5,16 @@
 
 static void usage(const char *progname)
 {
-	die("Usage: %s <packfile>|-idx <packfile.idx>", progname);
+	die("Usage: %s <packfile> <packfile.idx> <sha1>", progname);
 }
 
 int main(int argc, char* argv[])
 {
-	FILE *src;
-	const char *srcfile;
-	struct pack_header hdr;
+	unsigned char sha1[20];
 
-	if (argc < 2 || (argc == 3 && strncmp(argv[1], "-idx", 4)))
+	if (argc < 4)
 		usage(argv[0]);
-	srcfile = (argc  == 3 ? argv[2] : argv[1]);
-	if (!(src = fopen(srcfile, "rb")))
-		die("Could not open %s", argv[1]);
-	return (argc == 3 ? map_pack_idx(src) :
-		read_pack_header(src, &hdr));
+	load_packing_info(argv[1], argv[2], true);
+	get_sha1_hex(argv[3], sha1);
+	return unpack_entry(sha1, ".");
 }
