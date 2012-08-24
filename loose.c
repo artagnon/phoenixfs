@@ -9,13 +9,6 @@
 struct loose_buf looseroot = {0};
 static char xpath[PATH_MAX];
 
-static int size_compare(const void *_a, const void *_b)
-{
-	const struct pack_idx_entry *a = (struct pack_idx_entry *)_a;
-	const struct pack_idx_entry *b = (struct pack_idx_entry *)_b;
-	return (a->size < b->size) ? -1 : (a->size > b->size);
-}
-
 void add_loose_entry(const unsigned char *sha1, size_t size)
 {
 	uint32_t this_nr;
@@ -47,10 +40,9 @@ void packup_loose_objects(FILE *packfh, const void *idx_data,
 	/* For parsing out existing data in idx_map */
 	void *sha1_offset;
 	unsigned char this_sha1[20];
+	off_t this_offset;
+	int existing_nr;
 
-	/* Sort by size and prepare deltas before packing */
-	qsort(&looseroot, looseroot.nr,
-		sizeof(struct pack_idx_entry), size_compare);
 	fseek(packfh, 0L, SEEK_END);
 	for (i = 0; i < looseroot.nr; i++) {
 		this_entry = looseroot.entries[i];
@@ -83,14 +75,23 @@ void packup_loose_objects(FILE *packfh, const void *idx_data,
 		return;
 	}
 
+	/* Update index */
 	/* First, add entries from the existing idx_data */
 	/* Skip header and fanout table */
 	sha1_offset = (void *) (idx_data + 8 + 256 * 4);
+	existing_nr = looseroot.nr;
 	for (i = 0; i < idx_nr; i++) {
 		memcpy(&this_sha1, sha1_offset, 20);
+		print_sha1(sha1_digest, this_sha1);
 		add_loose_entry(this_sha1, 0);
+		if (!(this_offset = find_pack_entry(this_sha1)))
+			PHOENIXFS_DBG("packup_loose_objects:: "
+				"update idx missing %s", sha1_digest);
+		looseroot.entries[i + existing_nr]->offset = this_offset;
 		sha1_offset += 20 * sizeof(unsigned char);
 	}
+
+	/* Write the new entries */
 
 	/* Finally, rewrite the idx */
 	unmap_write_idx(looseroot.entries, looseroot.nr);

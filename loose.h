@@ -25,5 +25,6 @@ void add_loose_entry(const unsigned char *sha1, size_t size);
 void packup_loose_objects(FILE *packfh, const void *idx_data,
 			uint32_t idx_nr, const char *loosedir);
 void unmap_write_idx(struct pack_idx_entry *objects[], int nr_objects);
+off_t find_pack_entry(const unsigned char *sha1);
 
 #endif
