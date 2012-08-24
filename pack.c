@@ -351,6 +351,7 @@ void unmap_write_idx(struct pack_idx_entry *objects[], int nr_objects)
 	unsigned int nr_large_offset;
 	struct pack_idx_header hdr;
 	off_t last_obj_offset = 0;
+	char sha1_digest[40];
 	uint32_t array[256];
 	register int i;
 	FILE *idxfh;
@@ -408,6 +409,9 @@ void unmap_write_idx(struct pack_idx_entry *objects[], int nr_objects)
 		uint32_t offset = (obj->offset <= pack_idx_off32_limit) ?
 			obj->offset : (0x80000000 | nr_large_offset++);
 		offset = htonl(offset);
+		print_sha1(sha1_digest, obj->sha1);
+		PHOENIXFS_DBG("unmap_write_idx:: %s %llu", sha1_digest,
+			(long long int)obj->offset);
 		fwrite(&offset, sizeof(uint32_t), 1, idxfh);
 	}
 
