@@ -584,7 +584,11 @@ int phoenixfs_fuse(int argc, char *argv[])
 	int nargc;
 	char **nargv;
 	FILE *infile;
+	void *record;
 	struct stat st;
+	register int i;
+	struct dir_record *dr;
+	struct node *iter, *iter_root;
 
 	nargc = 4;
 	nargv = (char **) malloc(nargc * sizeof(char *));
@@ -641,6 +645,30 @@ int phoenixfs_fuse(int argc, char *argv[])
 		(infile = fopen(xpath, "rb"))) {
 		PHOENIXFS_DBG("phoenixfs_fuse:: loading fstree");
 		fstree_load_tree(infile);
+	}
+
+	/* Re-create dr tree */
+	iter_root = get_fsroot();
+	iter = get_fsroot();
+
+	while (!iter->is_leaf)
+		iter = iter->pointers[0];
+
+	while (1) {
+		for (i = 0; i < iter->num_keys; i++) {
+			if (!(record = find(iter_root, iter->keys[i], 0)))
+				PHOENIXFS_DBG("readdir:: key listing issue");
+			dr = (struct dir_record  *) record;
+			PHOENIXFS_DBG("phoenixfs_fuse:: mkdir: %s",
+				(const char *) dr->name);
+			sprintf(xpath, "%s%s", rootenv.fsback,
+				(const char *) dr->name);
+			mkdir(xpath, S_IRUSR | S_IWUSR | S_IXUSR);
+		}
+		if (iter->pointers[BTREE_ORDER - 1] != NULL)
+			iter = iter->pointers[BTREE_ORDER - 1];
+		else
+			break;
 	}
 
 	/* Check for .git/master.pack and .git/master.idx */

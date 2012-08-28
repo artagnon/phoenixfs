@@ -23,6 +23,7 @@ int parse_pathspec(char *xpath, const char *path);
 int build_xpath(char *xpath, const char *path, int rev);
 char *split_basename(const char *path, char *dirname);
 void fill_stat(struct stat *st, struct file_record *fr);
+struct node *get_fsroot(void);
 struct dir_record *find_dr(const char *path);
 struct vfile_record *find_vfr(const char *path);
 struct file_record *find_fr(const char *path, int rev);

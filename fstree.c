@@ -129,6 +129,11 @@ void fill_fr(struct file_record *fr, struct stat *st)
 	fr->mtime = st->st_mtime;
 }
 
+struct node *get_fsroot(void)
+{
+	return fsroot;
+}
+
 struct dir_record *find_dr(const char *path)
 {
 	struct dir_record *dr;
