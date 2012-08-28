@@ -651,6 +651,9 @@ int phoenixfs_fuse(int argc, char *argv[])
 	iter_root = get_fsroot();
 	iter = get_fsroot();
 
+	if (!iter)
+		goto END;
+
 	while (!iter->is_leaf)
 		iter = iter->pointers[0];
 
@@ -671,6 +674,7 @@ int phoenixfs_fuse(int argc, char *argv[])
 			break;
 	}
 
+END:
 	/* Check for .git/master.pack and .git/master.idx */
 	sprintf(xpath, "%s/.git/master.pack", rootenv.fsback);
 	sprintf(openpath, "%s/.git/master.idx", rootenv.fsback);
