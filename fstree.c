@@ -365,6 +365,7 @@ void fstree_remove_file(const char *path)
 	}
 	PHOENIXFS_DBG("fstree_remove_file:: %s", path);
 	delete(dr->vroot, key);
+	dr->vroot = NULL;
 }
 
 void fstree_dump_tree(FILE *outfile)

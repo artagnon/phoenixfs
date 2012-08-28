@@ -36,10 +36,15 @@ static void dump_vfr_tree(struct node *root, FILE *outfile)
 	struct vfile_record *vfr;
 	uint8_t start_rev, rev_nr;
 	uint16_t name_len;
-	register int i;
+	int i = 0;
 	node *iter;
 
-	iter = root;
+	if (!(iter = root)) {
+		/* Write num_keys = 0 */
+		fwrite(&i, sizeof(uint16_t), 1, outfile);
+		return;
+	}
+
 	while (!iter->is_leaf)
 		iter = iter->pointers[0];
 	fwrite(&(iter->num_keys), sizeof(uint16_t), 1, outfile);
