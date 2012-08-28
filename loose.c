@@ -43,6 +43,13 @@ void packup_loose_objects(FILE *packfh, const void *idx_data,
 	off_t this_offset;
 	int existing_nr;
 
+	/* Don't unnecessarily rewrite the index */
+	if (idx_data && !looseroot.nr) {
+		PHOENIXFS_DBG("packup_loose_objects:: Not rewriting idx");
+		return;
+	}
+
+	/* Write packfile and idx */
 	fseek(packfh, 0L, SEEK_END);
 	for (i = 0; i < looseroot.nr; i++) {
 		this_entry = looseroot.entries[i];
