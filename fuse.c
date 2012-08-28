@@ -35,16 +35,14 @@ static int phoenixfs_getattr(const char *path, struct stat *stbuf)
 	build_xpath(openpath, xpath, rev);
 	PHOENIXFS_DBG("getattr:: %s %d", openpath, rev);
 
-	/* Get directories and latest files from underlying FS */
-	if (!rev) {
-		if (lstat(openpath, stbuf) < 0)
-			return -errno;
+	/* Try underlying FS */
+	if (lstat(openpath, stbuf) < 0) {
+		/* Try fstree */
+		if (!(fr = find_fr(xpath, rev)))
+			return -ENOENT;
+	} else
 		return 0;
-	}
 
-	/* Get history from fstree */
-	if (!(fr = find_fr(xpath, rev)))
-		return -ENOENT;
 	memset(stbuf, 0, sizeof(struct stat));
 	fill_stat(stbuf, fr);
 	return 0;
@@ -277,8 +275,8 @@ static int phoenixfs_open(const char *path, struct fuse_file_info *fi)
 	rev = parse_pathspec(xpath, path);
 	build_xpath(fspath, xpath, 0);
 
-	/* Skip zinflate for latest revision and entries not in fstree */
-	if (!rev || !(fr = find_fr(xpath, rev)))
+	/* Skip zinflate for entries not in fstree */
+	if (!(fr = find_fr(xpath, rev)))
 		goto END;
 
 	/* Build openpath by hand */
