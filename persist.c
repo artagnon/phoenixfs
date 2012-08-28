@@ -95,11 +95,14 @@ void dump_dr_tree(struct node *root, FILE *outfile)
 {
 	struct dir_record *dr;
 	uint16_t name_len;
-	register int i;
+	int i = 0;
 	node *iter;
 
-	if (!(iter = root))
+	if (!(iter = root)) {
+		/* Write num_keys = 0 */
+		fwrite(&i, sizeof(uint16_t), 1, outfile);
 		return;
+	}
 
 	while (!iter->is_leaf)
 		iter = iter->pointers[0];
