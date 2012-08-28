@@ -24,7 +24,7 @@ BUILTIN_OBJS += loose.o
 ALL_TARGETS =
 ALL_TARGETS += phoenixfs
 
-CFLAGS = -g -O2 -Wall $(shell pkg-config fuse --cflags) $(shell pkg-config zlib --cflags)
+CFLAGS = -g -O0 -Wall $(shell pkg-config fuse --cflags) $(shell pkg-config zlib --cflags)
 LDFLAGS = $(shell pkg-config fuse --libs) $(shell pkg-config zlib --libs)
 ALL_CFLAGS = $(CFLAGS)
 ALL_LDFLAGS = $(LDFLAGS)
