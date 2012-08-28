@@ -29,6 +29,7 @@ void *phoenixfs_init(struct fuse_conn_info *conn)
 static int phoenixfs_getattr(const char *path, struct stat *stbuf)
 {
 	struct file_record *fr;
+	struct dir_record *dr;
 	int rev;
 
 	rev = parse_pathspec(xpath, path);
@@ -38,13 +39,18 @@ static int phoenixfs_getattr(const char *path, struct stat *stbuf)
 	/* Try underlying FS */
 	if (lstat(openpath, stbuf) < 0) {
 		/* Try fstree */
-		if (!(fr = find_fr(xpath, rev)))
-			return -ENOENT;
-	} else
-		return 0;
-
-	memset(stbuf, 0, sizeof(struct stat));
-	fill_stat(stbuf, fr);
+		if (!(dr = find_dr(xpath))) {
+			if (!(fr = find_fr(xpath, rev)))
+				return -ENOENT;
+			else {
+				memset(stbuf, 0, sizeof(struct stat));
+				fill_stat(stbuf, fr);
+				return 0;
+			}
+		}
+		memset(stbuf, 0, sizeof(struct stat));
+		stbuf->st_mode = S_IFDIR | 0755;
+	}
 	return 0;
 }
 
@@ -60,13 +66,23 @@ static int phoenixfs_fgetattr(const char *path, struct stat *stbuf,
 
 static int phoenixfs_opendir(const char *path, struct fuse_file_info *fi)
 {
+	struct dir_record *dr;
 	DIR *dp;
 
 	PHOENIXFS_DBG("opendir:: %s", path);
 	build_xpath(xpath, path, 0);
-	dp = opendir(xpath);
-	if (!dp)
-		return -errno;
+
+	/* Try underlying fs */
+	if (!(dp = opendir(xpath))) {
+		/* Try fstree */
+		if (!(dr = find_dr(path)))
+			return -ENOENT;
+		else {
+			/* Make the directory and open it */
+			mkdir(xpath, S_IRUSR | S_IWUSR | S_IXUSR);
+			dp = opendir(xpath);
+		}
+	}
 	fi->fh = (intptr_t) dp;
 	return 0;
 }
