@@ -82,6 +82,7 @@ The following invocations don't work:
 
      $ cp file1@1 file1 # FILE@REV can't be treated like a file
      $ echo "hello" >file1; echo "goodbye" >file1 # Race!
+     $ for i in {1..20}; do touch $i; done # The B+ tree crashes!
 
 ## Contributing
 Simply fork the project on GitHub and send pull requests.
