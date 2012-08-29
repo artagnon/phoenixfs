@@ -45,7 +45,7 @@
 // #define WINDOWS
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
+#include <string.h>
 
 // GLOBALS.
 
@@ -337,6 +337,7 @@ node *make_node(void)
 {
 	node *new_node;
 	new_node = malloc(sizeof(node));
+	memset(new_node, 0, sizeof(node));
 	if (new_node == NULL) {
 		perror("Node creation.");
 		exit(EXIT_FAILURE);
