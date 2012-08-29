@@ -136,7 +136,7 @@ static int phoenixfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler
 			if (filler(buf, (const char *) vfr->name, &st, 0))
 				return -ENOMEM;
 		}
-		if (iter->pointers[BTREE_ORDER - 1] != NULL)
+		if (iter->pointers && iter->pointers[BTREE_ORDER - 1] != NULL)
 			iter = iter->pointers[BTREE_ORDER - 1];
 		else
 			break;
@@ -668,7 +668,7 @@ int phoenixfs_fuse(int argc, char *argv[])
 				(const char *) dr->name);
 			mkdir(xpath, S_IRUSR | S_IWUSR | S_IXUSR);
 		}
-		if (iter->pointers[BTREE_ORDER - 1] != NULL)
+		if (iter->pointers && iter->pointers[BTREE_ORDER - 1] != NULL)
 			iter = iter->pointers[BTREE_ORDER - 1];
 		else
 			break;

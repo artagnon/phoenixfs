@@ -95,7 +95,7 @@ static void dump_vfr_tree(struct node *root, FILE *outfile)
 			/* Write the actual file records in chronological order */
 			dump_frs(vfr, start_rev, rev_nr, outfile);
 		}
-		if (iter->pointers[BTREE_ORDER - 1] != NULL)
+		if (iter->pointers && iter->pointers[BTREE_ORDER - 1] != NULL)
 			iter = iter->pointers[BTREE_ORDER - 1];
 		else
 			break;
@@ -128,7 +128,7 @@ void dump_dr_tree(struct node *root, FILE *outfile)
 	while (1) {
 		for (i = 0; i < iter->num_keys; i++)
 			num_keys++;
-		if (iter->pointers[BTREE_ORDER - 1] != NULL)
+		if (iter->pointers && iter->pointers[BTREE_ORDER - 1] != NULL)
 			iter = iter->pointers[BTREE_ORDER - 1];
 		else
 			break;
@@ -154,7 +154,7 @@ void dump_dr_tree(struct node *root, FILE *outfile)
 
 			dump_vfr_tree(dr->vroot, outfile);
 		}
-		if (iter->pointers[BTREE_ORDER - 1] != NULL)
+		if (iter->pointers && iter->pointers[BTREE_ORDER - 1] != NULL)
 			iter = iter->pointers[BTREE_ORDER - 1];
 		else
 			break;
