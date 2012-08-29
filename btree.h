@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <limits.h>
 
-#define BTREE_ORDER 20
+#define BTREE_ORDER 3
 
 /* How many revisions of each file to store */
 #define REV_TRUNCATE 20
