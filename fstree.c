@@ -236,6 +236,7 @@ struct dir_record *make_dr(const char *path)
 	PHOENIXFS_DBG("make_dr:: %s", path);
 	if (!(dr = malloc(sizeof(struct dir_record))))
 		return NULL;
+	memset(dr, 0, sizeof(struct dir_record));
 	memcpy(dr->name, path, strlen(path) + 1);
 	dr->vroot = NULL;
 	return dr;
@@ -248,6 +249,7 @@ struct vfile_record *make_vfr(const char *name)
 	PHOENIXFS_DBG("make_vfr:: %s", name);
 	if (!(vfr = malloc(sizeof(struct vfile_record))))
 		return NULL;
+	memset(vfr, 0, sizeof(struct vfile_record));
 	memcpy(vfr->name, name, strlen(name) + 1);
 	memset(vfr->history, 0,
 		REV_TRUNCATE * sizeof(struct file_record *));
@@ -266,6 +268,7 @@ struct file_record *make_fr(const char *path, const char *follow)
 	PHOENIXFS_DBG("make_fr:: %s", path);
 	if (!(fr = malloc(sizeof(struct file_record))))
 		return NULL;
+	memset(fr, 0, sizeof(struct file_record));
 	build_xpath(xpath, path, 0);
 
 	if (lstat(xpath, &st) < 0) {
