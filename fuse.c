@@ -432,7 +432,7 @@ static int phoenixfs_release(const char *path, struct fuse_file_info *fi)
 
 	/* Attempt to create a backup */
 	build_xpath(xpath, path, 0);
-	if ((infile = fopen(xpath, "rb")) < 0 ||
+	if (!(infile = fopen(xpath, "rb")) ||
 		(lstat(xpath, &st) < 0))
 		return -errno;
 	if ((ret = sha1_file(infile, st.st_size, sha1)) < 0) {
@@ -446,7 +446,7 @@ static int phoenixfs_release(const char *path, struct fuse_file_info *fi)
 		PHOENIXFS_DBG("release:: not overwriting: %s", outpath);
 		goto END;
 	}
-	if ((outfile = fopen(outpath, "wb")) < 0) {
+	if (!(outfile = fopen(outpath, "wb"))) {
 		fclose(infile);
 		return -errno;
 	}
