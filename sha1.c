@@ -69,10 +69,16 @@ int sha1_file(FILE *infile, size_t size, unsigned char *sha1)
 }
 
 void print_sha1(char *dst, const unsigned char *sha1) {
-	register int i;
-	for (i = 0; i < 20; i++)
-		dst ? sprintf(dst + 2 * i, "%02x", sha1[i]) :
-			printf("%02x", sha1[i]);
+	static const char hex[] = "0123456789abcdef";
+	char *buf = dst;
+	int i;
+
+	for (i = 0; i < 20; i++) {
+		unsigned int val = *sha1++;
+		*buf++ = hex[val >> 4];
+		*buf++ = hex[val & 0xf];
+	}
+	*buf = '\0';
 }
 
 int get_sha1_hex(const char *hex, unsigned char *sha1)
