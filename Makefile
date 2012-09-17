@@ -60,7 +60,7 @@ phoenixfs$X: $(BUILTIN_OBJS) $(ALL_LIBS)
 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) -o $@ $(BUILTIN_OBJS) \
 		$(ALL_LDFLAGS) $(ALL_LIBS)
 
-%.o: %.c %.h
+%.o: %.c %.h btree.h
 	$(QUIET_CC)$(CC) -o $*.o -c $(ALL_CFLAGS) $<
 
 $(XDIFF_LIB): $(XDIFF_OBJS)
