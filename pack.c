@@ -230,6 +230,7 @@ int map_pack_idx(FILE *src)
 	}
 	idx_map = mmap(NULL, idx_size, PROT_READ, MAP_PRIVATE, srcfd, 0);
 	close(srcfd);
+	fclose(src);
 	hdr = idx_map;
 	if (hdr->signature != htonl(PACK_IDX_SIGNATURE)) {
 		munmap(idx_map, idx_size);
@@ -430,6 +431,7 @@ void unmap_write_idx(struct pack_idx_entry *objects[], int nr_objects)
 		}
 	}
 	/* Omit the checksum trailer: 2 * 20 */
+	fclose(idxfh);
 }
 
 static int write_pack_hdr(const char *pack_path)

@@ -317,7 +317,7 @@ static int phoenixfs_open(const char *path, struct fuse_file_info *fi)
 	if (zinflate(infile, fsfile) != Z_OK)
 		PHOENIXFS_DBG("open:: zinflate issue");
 	fclose(infile);
-	rewind(fsfile);
+	fclose(fsfile);
 END:
 	if ((fd = open(fspath, fi->flags)) < 0)
 		return -errno;
@@ -435,8 +435,10 @@ static int phoenixfs_release(const char *path, struct fuse_file_info *fi)
 	if ((infile = fopen(xpath, "rb")) < 0 ||
 		(lstat(xpath, &st) < 0))
 		return -errno;
-	if ((ret = sha1_file(infile, st.st_size, sha1)) < 0)
+	if ((ret = sha1_file(infile, st.st_size, sha1)) < 0) {
+		fclose(infile);
 		return ret;
+	}
 	print_sha1(outfilename, sha1);
 	sprintf(outpath, "%s/.git/loose/%s", ROOTENV->fsback, outfilename);
 	if (!access(outpath, F_OK)) {
@@ -455,9 +457,9 @@ static int phoenixfs_release(const char *path, struct fuse_file_info *fi)
 	if (zdeflate(infile, outfile, -1) != Z_OK)
 		PHOENIXFS_DBG("release:: zdeflate issue");
 	mark_for_packing(sha1, st.st_size);
-	fseek(infile, 0L, SEEK_END);
 	fclose(outfile);
 END:
+	fclose(infile);
 	if (close(fi->fh) < 0) {
 		PHOENIXFS_DBG("release:: can't really close");
 		return -errno;
@@ -540,6 +542,7 @@ static void phoenixfs_destroy(void *userdata)
 	}
 	PHOENIXFS_DBG("destroy:: dumping fstree");
 	fstree_dump_tree(outfile);
+	fclose(outfile);
 	PHOENIXFS_DBG("destroy:: packing loose objects");
 	sprintf(xpath, "%s/.git/loose", ROOTENV->fsback);
 	dump_packing_info(xpath);
@@ -645,6 +648,7 @@ int phoenixfs_fuse(int argc, char *argv[])
 		(infile = fopen(xpath, "rb"))) {
 		PHOENIXFS_DBG("phoenixfs_fuse:: loading fstree");
 		fstree_load_tree(infile);
+		fclose(infile);
 	}
 
 	/* Re-create dr tree */
