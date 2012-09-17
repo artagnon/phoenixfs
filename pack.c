@@ -431,6 +431,8 @@ void unmap_write_idx(struct pack_idx_entry *objects[], int nr_objects)
 		}
 	}
 	/* Omit the checksum trailer: 2 * 20 */
+	for (i = 0; i < nr_objects; i++)
+		free(objects[i]);
 	fclose(idxfh);
 }
 
