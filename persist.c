@@ -21,6 +21,7 @@ static void dump_frs(struct vfile_record *vfr, uint8_t start_rev,
 	while (start_rev < rev_nr) {
 		fwrite(vfr->history[start_rev],
 			sizeof(struct file_record), 1, outfile);
+		free(vfr->history[start_rev]);
 		PHOENIXFS_DBG("dump_frs:: %s [%u]", vfr->name, start_rev);
 		start_rev = (start_rev + 1) % REV_TRUNCATE;
 	}
@@ -100,6 +101,7 @@ static void dump_vfr_tree(struct node *root, FILE *outfile)
 		else
 			break;
 	}
+	destroy_tree(root);
 }
 
 /**
@@ -159,6 +161,7 @@ void dump_dr_tree(struct node *root, FILE *outfile)
 		else
 			break;
 	}
+	destroy_tree(root);
 }
 
 
