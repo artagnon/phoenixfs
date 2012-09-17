@@ -18,7 +18,7 @@ struct pack_idx_entry {
 
 struct loose_buf {
 	uint32_t nr;
-	struct pack_idx_entry *entries[0]; /* GCC hack: 0 length */
+	struct pack_idx_entry **entries;
 };
 
 void add_loose_entry(const unsigned char *sha1, size_t size);
