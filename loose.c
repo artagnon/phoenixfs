@@ -18,6 +18,7 @@ void add_loose_entry(const unsigned char *sha1, size_t size)
 	print_sha1(sha1_digest, sha1);
 	PHOENIXFS_DBG("add_loose_entry:: %s [%d]", sha1_digest, this_nr);
 	looseroot.entries[this_nr] = malloc(sizeof(struct pack_idx_entry));
+	memset(looseroot.entries[this_nr], 0, (sizeof(struct pack_idx_entry)));
 	memcpy(looseroot.entries[this_nr]->sha1, sha1, 20);
 	looseroot.entries[this_nr]->size = size;
 	looseroot.nr ++;
