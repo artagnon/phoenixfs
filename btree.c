@@ -259,9 +259,11 @@ node *insert_into_leaf_after_splitting(node *root, node *leaf,
 				uint16_t key, struct dir_record *pointer)
 {
 	node *new_leaf;
-	int *temp_keys;
+	uint16_t *temp_keys;
 	void **temp_pointers;
-	int insertion_index, split, new_key, i, j;
+	int insertion_index, split;
+	uint16_t new_key;
+	register int i, j;
 
 	new_leaf = make_leaf();
 
@@ -331,7 +333,7 @@ node *insert_into_leaf_after_splitting(node *root, node *leaf,
 node *insert_into_node(node *root, node *n,
 			int left_index, uint16_t key, node *right)
 {
-	int i;
+	register int i;
 
 	for (i = n->num_keys; i > left_index; i--) {
 		n->pointers[i + 1] = n->pointers[i];
@@ -351,10 +353,11 @@ node *insert_into_node(node *root, node *n,
 node *insert_into_node_after_splitting(node *root, node *old_node, int left_index,
 					uint16_t key, node *right)
 {
-	int i, j, split, k_prime;
+	int split, k_prime;
 	node *new_node, *child;
-	int *temp_keys;
+	uint16_t *temp_keys;
 	node **temp_pointers;
+	register int i, j;
 
 	/*First create a temporary set of keys and pointers
 	 *to hold everything in order, including
@@ -568,7 +571,7 @@ node *insert(node *root, uint16_t key, void *value)
  */
 int get_neighbor_index(node *n)
 {
-	int i;
+	register int i;
 
 	/*Return the index of the key to the left
 	 *of the pointer in the parent pointing
@@ -589,7 +592,7 @@ int get_neighbor_index(node *n)
 
 node *remove_entry_from_node(node *n, uint16_t key, node *pointer)
 {
-	int i, num_pointers;
+	register int i, num_pointers;
 
 	// Remove the key and shift other keys accordingly.
 	i = 0;
@@ -670,9 +673,10 @@ node *adjust_root(node *root)
  */
 node *coalesce_nodes(node *root, node *n, node *neighbor, int neighbor_index, int k_prime)
 {
-	int i, j, neighbor_insertion_index, n_start, n_end, new_k_prime = 0;
+	int neighbor_insertion_index, n_start, n_end, new_k_prime = 0;
 	node *tmp;
 	bool split;
+	register int i, j;
 
 	/*Swap neighbor with node if node is on the
 	 *extreme left and neighbor is to its right.
@@ -812,7 +816,7 @@ node *coalesce_nodes(node *root, node *n, node *neighbor, int neighbor_index, in
 node *redistribute_nodes(node *root, node *n, node *neighbor, int neighbor_index,
 			int k_prime_index, int k_prime)
 {
-	int i;
+	register int i;
 	node *tmp;
 
 	/*Case: n has a neighbor to the left.
@@ -969,7 +973,8 @@ node *delete(node *root, uint16_t key)
 
 void destroy_tree(node *root)
 {
-	int i;
+	register int i;
+
 	if (root->is_leaf)
 		for (i = 0; i < root->num_keys; i++)
 			free(root->pointers[i]);
