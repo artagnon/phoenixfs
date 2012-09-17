@@ -584,8 +584,7 @@ static struct fuse_operations phoenixfs_oper = {
 /* argv[2] is fsback and argv[3] is the mountpoint */
 int phoenixfs_fuse(int argc, char *argv[])
 {
-	int nargc;
-	char **nargv;
+	char *nargv[4];
 	FILE *infile;
 	void *record;
 	struct stat st;
@@ -593,8 +592,6 @@ int phoenixfs_fuse(int argc, char *argv[])
 	struct dir_record *dr;
 	struct node *iter, *iter_root;
 
-	nargc = 4;
-	nargv = (char **) malloc(nargc * sizeof(char *));
 	struct env_t rootenv;
 
 	/* Sanitize fsback */
@@ -696,5 +693,5 @@ END:
 	nargv[1] = "-d";
 	nargv[2] = "-odefault_permissions";
 	nargv[3] = argv[3];
-	return fuse_main(nargc, nargv, &phoenixfs_oper, &rootenv);
+	return fuse_main(4, nargv, &phoenixfs_oper, &rootenv);
 }
