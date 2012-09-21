@@ -473,6 +473,7 @@ END:
 static int phoenixfs_fsync(const char *path,
 		int datasync, struct fuse_file_info *fi)
 {
+	PHOENIXFS_DBG("fsync:: %s", path);
 	if (datasync) {
 		if (fdatasync(fi->fh) < 0)
 			return -errno;
@@ -485,6 +486,7 @@ static int phoenixfs_fsync(const char *path,
 static int phoenixfs_ftruncate(const char *path,
 			off_t offset, struct fuse_file_info *fi)
 {
+	PHOENIXFS_DBG("ftruncate:: %s", path);
 	build_xpath(xpath, path, 0);
 	if (ftruncate(fi->fh, offset) < 0)
 		return -errno;
@@ -503,6 +505,7 @@ static int phoenixfs_readlink(const char *path, char *link, size_t size)
 
 static int phoenixfs_mkdir(const char *path, mode_t mode)
 {
+	PHOENIXFS_DBG("mkdir:: %s", path);
 	build_xpath(xpath, path, 0);
 	if (mkdir(xpath, mode) < 0)
 		return -errno;
