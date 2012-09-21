@@ -17,9 +17,12 @@
 #include <zlib.h>
 #include <ftw.h>
 #include <sys/types.h>
+#include <pthread.h>
 
 static char xpath[PATH_MAX] = "\0";
 static char openpath[PATH_MAX] = "\0";
+
+static pthread_mutex_t phoenixfs_mutexlock = PTHREAD_MUTEX_INITIALIZER;
 
 void *phoenixfs_init(struct fuse_conn_info *conn)
 {
@@ -360,8 +363,12 @@ static int phoenixfs_read(const char *path, char *buf, size_t size,
 	ssize_t read_bytes;
 
 	PHOENIXFS_DBG("read:: %s", path);
-	if ((read_bytes = pread(fi->fh, buf, size, offset)) < 0)
+	pthread_mutex_lock(&phoenixfs_mutexlock);
+	if ((read_bytes = pread(fi->fh, buf, size, offset)) < 0) {
+		pthread_mutex_unlock(&phoenixfs_mutexlock);
 		return -errno;
+	}
+	pthread_mutex_unlock(&phoenixfs_mutexlock);
 	return read_bytes;
 }
 
@@ -371,8 +378,12 @@ static int phoenixfs_write(const char *path, const char *buf, size_t size,
 	ssize_t written_bytes;
 
 	PHOENIXFS_DBG("write:: %s", path);
-	if ((written_bytes = pwrite(fi->fh, buf, size, offset)) < 0)
+	pthread_mutex_lock(&phoenixfs_mutexlock);
+	if ((written_bytes = pwrite(fi->fh, buf, size, offset)) < 0) {
+		pthread_mutex_unlock(&phoenixfs_mutexlock);
 		return -errno;
+	}
+	pthread_mutex_unlock(&phoenixfs_mutexlock);
 	return written_bytes;
 }
 
@@ -397,6 +408,8 @@ static int phoenixfs_release(const char *path, struct fuse_file_info *fi)
 	char outpath[PATH_MAX];
 	int rev, ret;
 
+	pthread_mutex_lock(&phoenixfs_mutexlock);
+
 	/* Don't recursively backup history */
 	if ((rev = parse_pathspec(xpath, path))) {
 		PHOENIXFS_DBG("release:: history: %s", path);
@@ -404,6 +417,7 @@ static int phoenixfs_release(const char *path, struct fuse_file_info *fi)
 		/* Inflate the original version back onto the filesystem */
 		if (!(fr = find_fr(xpath, 0))) {
 			PHOENIXFS_DBG("release:: Can't find revision 0!");
+			pthread_mutex_unlock(&phoenixfs_mutexlock);
 			return 0;
 		}
 		print_sha1(sha1_digest, fr->sha1);
@@ -411,8 +425,10 @@ static int phoenixfs_release(const char *path, struct fuse_file_info *fi)
 		build_xpath(outpath, xpath, 0);
 
 		if (!(infile = fopen(inpath, "rb")) ||
-			!(outfile = fopen(outpath, "wb+")))
+			!(outfile = fopen(outpath, "wb+"))) {
+			pthread_mutex_unlock(&phoenixfs_mutexlock);
 			return -errno;
+		}
 		PHOENIXFS_DBG("release:: history: zinflate %s onto %s",
 			sha1_digest, outpath);
 		rewind(infile);
@@ -425,18 +441,23 @@ static int phoenixfs_release(const char *path, struct fuse_file_info *fi)
 
 		if (close(fi->fh) < 0) {
 			PHOENIXFS_DBG("release:: can't really close");
+			pthread_mutex_unlock(&phoenixfs_mutexlock);
 			return -errno;
 		}
+		pthread_mutex_unlock(&phoenixfs_mutexlock);
 		return 0;
 	}
 
 	/* Attempt to create a backup */
 	build_xpath(xpath, path, 0);
 	if (!(infile = fopen(xpath, "rb")) ||
-		(lstat(xpath, &st) < 0))
+		(lstat(xpath, &st) < 0)) {
+		pthread_mutex_unlock(&phoenixfs_mutexlock);
 		return -errno;
+	}
 	if ((ret = sha1_file(infile, st.st_size, sha1)) < 0) {
 		fclose(infile);
+		pthread_mutex_unlock(&phoenixfs_mutexlock);
 		return ret;
 	}
 	print_sha1(outfilename, sha1);
@@ -448,6 +469,7 @@ static int phoenixfs_release(const char *path, struct fuse_file_info *fi)
 	}
 	if (!(outfile = fopen(outpath, "wb"))) {
 		fclose(infile);
+		pthread_mutex_unlock(&phoenixfs_mutexlock);
 		return -errno;
 	}
 
@@ -467,6 +489,8 @@ END:
 
 	/* Update the fstree */
 	fstree_insert_update_file(path, NULL);
+
+	pthread_mutex_unlock(&phoenixfs_mutexlock);
 	return 0;
 }
 
