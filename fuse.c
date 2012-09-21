@@ -577,6 +577,19 @@ static struct fuse_operations phoenixfs_oper = {
 	.rename = phoenixfs_rename,
 	.truncate = phoenixfs_truncate,
 	.utime = phoenixfs_utime,
+#if 0
+	.setxattr = phoenixfs_setxattr;
+	.getxattr = phoenixfs_getxattr;
+	.listxattr = phoenixfs_listxattr;
+	.removexattr = phoenixfs_removexattr;
+	.fsyncdir = phoenixfs_fsyncdir,
+	.lock = phoenixfs_lock,
+	.flush = phoenixfs_flush,
+	.utimens = phoenixfs_utimens,
+	.bmap = phoenixfs_bmap,
+	.poll = phoenixfs_poll,
+	.ioctl = phoenixfs_ioctl,
+#endif
 	.destroy = phoenixfs_destroy,
 };
 
