@@ -1,7 +1,6 @@
-# phoenixfs v0.1
+# phoenixfs
 A filesystem implemented in userspace (using FUSE), inspired by the
-way Git is designed.  This is a very early implementation, and
-contains lots of bugs.
+way Git is designed.  This is a toy - expect it to be buggy.
 
 ## Dependencies
 1. Zlib (>= 1.2)
