@@ -61,6 +61,13 @@
  */
 int order = BTREE_ORDER;
 
+/*The queue is used to print the tree in
+ *level order, starting from the root
+ *printing each entire rank on a separate
+ *line, finishing with the leaves.
+ */
+node *queue = NULL;
+
 /*The user can toggle on and off the "verbose"
  *property, which causes the pointer addresses
  *to be printed out in hexadecimal notation
@@ -103,6 +110,155 @@ void usage_2(void)
 	printf("\tv -- Toggle output of pointer addresses (\"verbose\") in tree and leaves.\n");
 	printf("\tq -- Quit. (Or use Ctl-D.)\n");
 	printf("\t? -- Print this help message.\n");
+}
+
+
+/*Helper function for printing the
+ *tree out.  See print_tree.
+ */
+void enqueue(node *new_node)
+{
+	node *c;
+	if (queue == NULL) {
+		queue = new_node;
+		queue->next = NULL;
+	}
+	else {
+		c = queue;
+		while(c->next != NULL) {
+			c = c->next;
+		}
+		c->next = new_node;
+		new_node->next = NULL;
+	}
+}
+
+/*Helper function for printing the
+ *tree out.  See print_tree.
+ */
+node *dequeue(void)
+{
+	node *n = queue;
+	queue = queue->next;
+	n->next = NULL;
+	return n;
+}
+
+
+/*Prints the bottom row of keys
+ *of the tree (with their respective
+ *pointers, if the verbose_output flag is set.
+ */
+void print_leaves(node *root)
+{
+	int i;
+	node *c = root;
+	if (root == NULL) {
+		printf("Empty tree.\n");
+		return;
+	}
+	while (!c->is_leaf)
+		c = c->pointers[0];
+	while (true) {
+		for (i = 0; i < c->num_keys; i++) {
+			if (verbose_output)
+				printf("%lx ", (unsigned long)c->pointers[i]);
+			printf("%d ", c->keys[i]);
+		}
+		if (verbose_output)
+			printf("%lx ", (unsigned long)c->pointers[order - 1]);
+		if (c->pointers[order - 1] != NULL) {
+			printf(" | ");
+			c = c->pointers[order - 1];
+		}
+		else
+			break;
+	}
+	printf("\n");
+}
+
+
+/*Utility function to give the height
+ *of the tree, which length in number of edges
+ *of the path from the root to any leaf.
+ */
+int height(node *root)
+{
+	int h = 0;
+	node *c = root;
+	while (!c->is_leaf) {
+		c = c->pointers[0];
+		h++;
+	}
+	return h;
+}
+
+
+/*Utility function to give the length in edges
+ *of the path from any node to the root.
+ */
+int path_to_root(node *root, node *child)
+{
+	int length = 0;
+	node *c = child;
+	while (c != root) {
+		c = c->parent;
+		length++;
+	}
+	return length;
+}
+
+
+/*Prints the B+ tree in the command
+ *line in level (rank) order, with the
+ *keys in each node and the '|' symbol
+ *to separate nodes.
+ *With the verbose_output flag set.
+ *the values of the pointers corresponding
+ *to the keys also appear next to their respective
+ *keys, in hexadecimal notation.
+ */
+void print_tree(node *root)
+{
+	node *n = NULL;
+	int i = 0;
+	int rank = 0;
+	int new_rank = 0;
+
+	if (root == NULL) {
+		printf("Empty tree.\n");
+		return;
+	}
+	queue = NULL;
+	enqueue(root);
+	while (queue != NULL) {
+		n = dequeue();
+		if (n->parent != NULL && n == n->parent->pointers[0]) {
+			new_rank = path_to_root (root, n);
+			if (new_rank != rank) {
+				rank = new_rank;
+				printf("\n");
+			}
+		}
+		if (verbose_output)
+			printf("(%lx)", (unsigned long)n);
+		for (i = 0; i < n->num_keys; i++) {
+			if (verbose_output)
+				printf("%lx ", (unsigned long)n->pointers[i]);
+			printf("%d ", n->keys[i]);
+		}
+		if (!n->is_leaf)
+			for (i = 0; i <= n->num_keys; i++)
+				enqueue(n->pointers[i]);
+		if (verbose_output) {
+			if (n->is_leaf)
+				printf("%lx ", (unsigned long)n->pointers[order - 1]);
+			else
+				printf("%lx ", (unsigned long)n->pointers[n->num_keys]);
+		}
+		printf("| ");
+	}
+	printf("\n");
 }
 
 
