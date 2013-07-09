@@ -14,6 +14,7 @@ int main(int argc, char* argv[])
 {
 	FILE *infile;
 	unsigned char sha1[20];
+	char sha1_digest[40];
 	struct stat st;
 
 	if (argc < 2)
@@ -25,7 +26,7 @@ int main(int argc, char* argv[])
 	if (sha1_file(infile, st.st_size, sha1) < 0)
 		die("SHA1 failed");
 	fclose(infile);
-	print_sha1(NULL, sha1);
-	printf("  %s\n", argv[1]);
+	print_sha1(sha1_digest, sha1);
+	printf("%s\n", sha1_digest);
 	return 0;
 }
