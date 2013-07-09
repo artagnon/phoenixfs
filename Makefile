@@ -69,6 +69,9 @@ $(XDIFF_LIB): $(XDIFF_OBJS)
 $(SHA1_LIB): $(SHA1_OBJS)
 	$(QUIET_AR)$(RM) $@ && $(AR) rcs $@ $^
 
+test:
+	$(MAKE) -C t
+
 clean:
 	$(RM) $(ALL_TARGETS) $(BUILTIN_OBJS) $(XDIFF_OBJS) \
 	$(SHA1_OBJS) $(ALL_LIBS)
