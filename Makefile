@@ -2,8 +2,8 @@ CC = gcc
 RM = rm -f
 MV = mv
 
-XDIFF_LIB=xdiff/lib.a
-SHA1_LIB=block-sha1/lib.a
+XDIFF_LIB = xdiff/lib.a
+SHA1_LIB = block-sha1/lib.a
 
 BUILTIN_OBJS =
 BUILTIN_OBJS += common.o
@@ -21,8 +21,7 @@ BUILTIN_OBJS += persist.o
 BUILTIN_OBJS += delta.o
 BUILTIN_OBJS += loose.o
 
-ALL_TARGETS =
-ALL_TARGETS += phoenixfs
+ALL_TARGETS = phoenixfs
 
 CFLAGS = -g -O0 -Wall $(shell pkg-config fuse --cflags) $(shell pkg-config zlib --cflags)
 LDFLAGS = $(shell pkg-config fuse --libs) $(shell pkg-config zlib --libs)
@@ -64,13 +63,13 @@ phoenixfs$X: $(BUILTIN_OBJS) $(ALL_LIBS)
 	$(QUIET_CC)$(CC) -o $*.o -c $(ALL_CFLAGS) $<
 
 $(XDIFF_LIB): $(XDIFF_OBJS)
-	$(QUIET_AR)$(RM) $@ && $(AR) rcs $@ $(XDIFF_OBJS)
+	$(QUIET_AR)$(RM) $@ && $(AR) rcs $@ $^
 
 $(SHA1_LIB): $(SHA1_OBJS)
-	$(QUIET_AR)$(RM) $@ && $(AR) rcs $@ $(SHA1_OBJS)
+	$(QUIET_AR)$(RM) $@ && $(AR) rcs $@ $^
 
 clean:
 	$(RM) $(ALL_TARGETS) $(BUILTIN_OBJS) $(XDIFF_OBJS) \
-	$(SHA1_OBJS) $(ALL_LIBS) $<
+	$(SHA1_OBJS) $(ALL_LIBS)
 
 .PHONY: all clean FORCE
