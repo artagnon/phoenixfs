@@ -41,6 +41,7 @@ endif
 ifneq ($(findstring $(MAKEFLAGS),s),s)
 ifndef V
 	QUIET_CC      = @echo '   ' CC $@;
+	QUIET_AR      = @echo '   ' AR $@;
 	QUIET_LINK    = @echo '   ' LINK $@;
 	QUIET_SUBDIR0 = +@subdir=
 	QUIET_SUBDIR1 = ;$(NO_SUBDIR) echo '   ' SUBDIR $$subdir; \
